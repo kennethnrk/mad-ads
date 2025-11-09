@@ -133,6 +133,7 @@ class Product(Base):
     description = Column(Text)  # Product description
     price = Column(Float)  # Product price
     tags = Column(String)  # List of tag strings
+    img_url = Column(String)  # Product image URL
     created_at = Column(DateTime, server_default=func.now())
 
 

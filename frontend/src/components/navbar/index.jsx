@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "store/hooks";
 import { logout } from "store/userSlice";
+import { setCompanyId } from "store/companySlice";
 import Dropdown from "components/dropdown";
 import { FiAlignJustify } from "react-icons/fi";
 import { Link } from "react-router-dom";
@@ -18,14 +19,29 @@ import avatar from "assets/img/avatars/avatar4.png";
 const Navbar = (props) => {
   const { onOpenSidenav, brandText } = props;
   const [darkmode, setDarkmode] = React.useState(false);
+  const [companyIdInput, setCompanyIdInput] = React.useState("");
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.user);
+  const { company_id } = useAppSelector((state) => state.company);
 
   const handleLogout = () => {
     dispatch(logout());
     navigate("/auth/sign-in");
   };
+
+  const handleSetCompanyId = () => {
+    if (companyIdInput.trim()) {
+      dispatch(setCompanyId(companyIdInput.trim()));
+      setCompanyIdInput("");
+    }
+  };
+
+  React.useEffect(() => {
+    if (company_id) {
+      setCompanyIdInput(company_id);
+    }
+  }, [company_id]);
 
   return (
     <nav className="sticky top-4 z-40 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/10 p-2 backdrop-blur-xl dark:bg-[#0b14374d]">
@@ -217,6 +233,36 @@ const Navbar = (props) => {
               <div className="h-px w-full bg-gray-200 dark:bg-white/20 " />
 
               <div className="flex flex-col p-4">
+                <div className="mb-3">
+                  <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Company ID
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={companyIdInput}
+                      onChange={(e) => setCompanyIdInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          handleSetCompanyId();
+                        }
+                      }}
+                      placeholder="Enter company ID"
+                      className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-800 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-navy-800 dark:text-white dark:placeholder:text-gray-400"
+                    />
+                    <button
+                      onClick={handleSetCompanyId}
+                      className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300"
+                    >
+                      Set
+                    </button>
+                  </div>
+                  {company_id && (
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                      Current: {company_id}
+                    </p>
+                  )}
+                </div>
                 <a
                   href=" "
                   className="text-sm text-gray-800 dark:text-white hover:dark:text-white"

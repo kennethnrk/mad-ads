@@ -28,9 +28,9 @@ export default function ProductCreateCard() {
   };
 
   return (
-    <div className="max-w-lg mx-auto bg-white rounded-2xl p-12 mt-10">
+    <div className="max-w-lg mx-auto bg-white rounded-2xl p-12 mt-10 w-full">
       <h2 className="text-2xl font-bold mb-4 text-slate-900">Create Product</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-slate-700">Product Name</label>
           <input className="border border-slate-300 bg-slate-50 rounded-lg p-2" value={name} onChange={e => setName(e.target.value)} required />
@@ -52,8 +52,8 @@ export default function ProductCreateCard() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-slate-700">Ad Files</label>
-          <input type="file" multiple onChange={e => setFiles(Array.from(e.target.files))} className="border border-slate-300 bg-slate-50 rounded-lg p-2" />
+          {/* <label className="text-sm font-medium text-slate-700">Ad Files</label> */}
+          {/* <input type="file" multiple onChange={e => setFiles(Array.from(e.target.files))} className="border border-slate-300 bg-slate-50 rounded-lg p-2" /> */}
         </div>
 <button
           href=" "

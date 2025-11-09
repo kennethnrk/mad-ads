@@ -1,26 +1,42 @@
 [
   {
-    "name": "Marketplace",
-    "status": "Approved",
-    "date": "24.Jan.2021",
-    "progress": 30
+    "id": "a1b2c3d4-e5f6-4001-a001-111122223333",
+    "company_id": "96cc16f0-a4fe-4518-8b7a-a40b8e921cda",
+    "name": "Vanilla Whey Isolate",
+    "description": "High-purity whey isolate, 25g protein per serving. Fast absorption and low carb.",
+    "price": 4999,
+    "tags": "protein, whey, vanilla, isolate, fitness"
   },
   {
-    "name": "Marketplace",
-    "status": "Disable",
-    "date": "30.Dec.2021",
-    "progress": 30
+    "id": "b2c3d4e5-f6a1-4002-b002-222233334444",
+    "company_id": "96cc16f0-a4fe-4518-8b7a-a40b8e921cda",
+    "name": "Peanut Butter Vegan Blend",
+    "description": "Plant-based protein blend (pea, rice, hemp) with natural peanut butter flavor.",
+    "price": 3950,
+    "tags": "protein, vegan, plant-based, peanut-butter, organic"
   },
   {
-    "name": "Marketplace",
-    "status": "Error",
-    "date": "20.May.2021",
-    "progress": 30
+    "id": "c3d4e5f6-a1b2-4003-c003-333344445555",
+    "company_id": "96cc16f0-a4fe-4518-8b7a-a40b8e921cda",
+    "name": "Casein Protein - Chocolate",
+    "description": "Slow-digesting protein, ideal for bedtime. Rich chocolate flavor.",
+    "price": 5299,
+    "tags": "protein, casein, chocolate, recovery, slow-release"
   },
   {
-    "name": "Marketplace",
-    "status": "Approved",
-    "date": "12.Jul.2021",
-    "progress": 30
+    "id": "d4e5f6a1-b2c3-4004-d004-444455556666",
+    "company_id": "96cc16f0-a4fe-4518-8b7a-a40b8e921cda",
+    "name": "Collagen Peptides Unflavored",
+    "description": "Hydrolyzed collagen for joint, skin, and hair support. Mixes easily.",
+    "price": 3200,
+    "tags": "protein, collagen, peptides, unflavored, joint-health"
+  },
+  {
+    "id": "e5f6a1b2-c3d4-4005-e005-555566667777",
+    "company_id": "96cc16f0-a4fe-4518-8b7a-a40b8e921cda",
+    "name": "Meal Replacement Shake - Berry",
+    "description": "All-in-one nutrition: protein, fiber, and essential vitamins in a single shake.",
+    "price": 6500,
+    "tags": "protein, meal-replacement, shake, berry, vitamins"
   }
 ]

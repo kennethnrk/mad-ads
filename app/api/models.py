@@ -113,6 +113,7 @@ class ProductCreateRequest(BaseModel):
     description: Optional[str] = None
     price: Optional[float] = None
     tags: Optional[str] = None   # we will join into comma string
+    img_url: Optional[str] = None  # Product image URL
 
 
 class ProductResponse(BaseModel):
@@ -122,7 +123,8 @@ class ProductResponse(BaseModel):
     name: str
     description: Optional[str] = None
     price: Optional[float] = None
-    tags: Optional[str] = None  
+    tags: Optional[str] = None
+    img_url: Optional[str] = None  # Product image URL  
 
 
 class ProductUpdateRequest(BaseModel):
@@ -130,6 +132,7 @@ class ProductUpdateRequest(BaseModel):
     description: Optional[str] = None
     price: Optional[float] = None
     tags: Optional[str] = None
+    img_url: Optional[str] = None  # Product image URL
 
 
 class ImageUploadResponse(BaseModel):

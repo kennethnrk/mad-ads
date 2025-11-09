@@ -253,3 +253,21 @@ export const logoutUser = () => {
   localStorage.removeItem('authToken');
 };
 
+/**
+ * Get products list
+ * @param {Object} params - { skip?, limit?, company_id?, category?, is_active? }
+ */
+export const getProducts = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.skip !== undefined) queryParams.append('skip', params.skip);
+  if (params.limit !== undefined) queryParams.append('limit', params.limit);
+  if (params.company_id) queryParams.append('company_id', params.company_id);
+  if (params.category) queryParams.append('category', params.category);
+  if (params.is_active !== undefined) queryParams.append('is_active', params.is_active);
+  
+  const endpoint = `${API_ENDPOINTS.PRODUCTS}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return apiRequest(endpoint, {
+    method: 'GET',
+  });
+};
+

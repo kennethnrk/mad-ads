@@ -554,6 +554,7 @@ async def create_product(req: ProductCreateRequest, db: Session = Depends(get_db
             description=req.description,
             price=req.price,
             tags=req.tags if req.tags else "",
+            img_url=req.img_url,
         )
         db.add(product)
         db.commit()
@@ -566,6 +567,7 @@ async def create_product(req: ProductCreateRequest, db: Session = Depends(get_db
             description=product.description,
             price=product.price,
             tags=product.tags,
+            img_url=product.img_url,
         )
     except Exception as e:
         db.rollback()
@@ -592,6 +594,7 @@ async def get_product(
         description=product.description,
         price=product.price,
         tags=product.tags,
+        img_url=product.img_url,
     )
 
 
@@ -626,189 +629,6 @@ async def list_products(
         description=product.description,
         price=product.price,
         tags=product.tags,
+        img_url=product.img_url,
     )        for product in products
     ]
-
-
-@router.put("/products/{product_id}", response_model=ProductResponse)
-async def update_product(
-    product_id: str,
-    request: ProductUpdateRequest,
-    db: Session = Depends(get_db)
-):
-    """Update a product"""
-    logger.info("update_product_requested", product_id=product_id)
-    
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    # Update fields
-    if request.name is not None:
-        product.name = request.name
-    if request.description is not None:
-        product.description = request.description
-    if request.price is not None:
-        product.price = request.price
-    if request.currency is not None:
-        product.currency = request.currency
-    if request.category is not None:
-        product.category = request.category
-    if request.ad_phrases is not None:
-        product.ad_phrases = request.ad_phrases
-    if request.use_cases is not None:
-        product.use_cases = request.use_cases
-    if request.features is not None:
-        product.features = request.features
-    if request.target_audience is not None:
-        product.target_audience = request.target_audience
-    if request.pain_points is not None:
-        product.pain_points = request.pain_points
-    if request.keywords is not None:
-        product.keywords = request.keywords
-    if request.extra_metadata is not None:
-        product.extra_metadata = request.extra_metadata
-    if request.is_active is not None:
-        product.is_active = request.is_active
-    
-    # Regenerate LLM content if key fields changed
-    if request.name or request.description or request.category or request.features or request.use_cases or request.pain_points:
-        logger.info("regenerating_product_content")
-        company = db.query(Company).filter(Company.id == product.company_id).first()
-        llm_content = await generate_product_content(
-            name=product.name,
-            description=product.description,
-            category=product.category,
-            company_name=company.name if company else None,
-            features=product.features,
-            use_cases=product.use_cases,
-            pain_points=product.pain_points
-        )
-        product.embedded_text = llm_content.get("embedded_text")
-        product.product_summary = llm_content.get("product_summary")
-        if not request.ad_phrases:
-            product.ad_phrases = llm_content.get("ad_phrases", [])
-        if not request.keywords:
-            product.keywords = llm_content.get("keywords", [])
-        if not request.target_audience:
-            product.target_audience = llm_content.get("target_audience", {})
-        if not request.pain_points:
-            product.pain_points = llm_content.get("pain_points", [])
-    
-    product.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(product)
-    
-    return ProductResponse(
-        id=product.id,
-        company_id=product.company_id,
-        name=product.name,
-        description=product.description,
-        price=product.price,
-        currency=product.currency,
-        category=product.category,
-        image_urls=product.image_urls,
-        embedded_text=product.embedded_text,
-        ad_phrases=product.ad_phrases,
-        use_cases=product.use_cases,
-        product_summary=product.product_summary,
-        features=product.features,
-        target_audience=product.target_audience,
-        pain_points=product.pain_points,
-        keywords=product.keywords,
-        extra_metadata=product.extra_metadata,
-        is_active=product.is_active,
-        created_at=product.created_at,
-        updated_at=product.updated_at
-    )
-
-
-# Image upload routes
-@router.post("/companies/{company_id}/logo", response_model=ImageUploadResponse)
-async def upload_company_logo(
-    company_id: str,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    """Upload a company logo"""
-    logger.info("upload_company_logo_requested", company_id=company_id, filename=file.filename)
-    
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
-    
-    try:
-        # Read file content
-        file_content = await file.read()
-        
-        # Generate storage key
-        file_ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-        storage_key = f"companies/{company_id}/logo{file_ext}"
-        
-        # Upload to storage
-        storage_id = await storage_put(file_content, storage_key)
-        
-        # Get URL
-        image_url = await storage_url(storage_id)
-        
-        # Update company record
-        company.logo_url = image_url
-        db.commit()
-        
-        logger.info("company_logo_uploaded", company_id=company_id, image_url=image_url)
-        
-        return ImageUploadResponse(
-            image_url=image_url,
-            storage_id=storage_id,
-            message="Company logo uploaded successfully"
-        )
-    except Exception as e:
-        logger.error("upload_company_logo_error", error=str(e), exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to upload logo: {str(e)}")
-
-
-@router.post("/products/{product_id}/images", response_model=ImageUploadResponse)
-async def upload_product_image(
-    product_id: str,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    """Upload a product image"""
-    logger.info("upload_product_image_requested", product_id=product_id, filename=file.filename)
-    
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    try:
-        # Read file content
-        file_content = await file.read()
-        
-        # Generate storage key
-        file_ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-        image_id = uuid.uuid4().hex[:8]
-        storage_key = f"products/{product_id}/images/{image_id}{file_ext}"
-        
-        # Upload to storage
-        storage_id = await storage_put(file_content, storage_key)
-        
-        # Get URL
-        image_url = await storage_url(storage_id)
-        
-        # Update product record
-        if product.image_urls is None:
-            product.image_urls = []
-        product.image_urls.append(image_url)
-        db.commit()
-        
-        logger.info("product_image_uploaded", product_id=product_id, image_url=image_url)
-        
-        return ImageUploadResponse(
-            image_url=image_url,
-            storage_id=storage_id,
-            message="Product image uploaded successfully"
-        )
-    except Exception as e:
-        logger.error("upload_product_image_error", error=str(e), exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
-

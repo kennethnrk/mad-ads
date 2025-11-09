@@ -40,6 +40,8 @@ export const API_ENDPOINTS = {
   // Video processing endpoints
   VIDEO_PROCESS_AND_MATCH: `${API_BASE_URL}/api/v1/video/process-and-match`,
   TRANSCRIBE: `${API_BASE_URL}/api/v1/transcribe`,
+
+  PRODUCTS: `${API_BASE_URL}/api/v1/products`,
 };
 
 export default API_BASE_URL;

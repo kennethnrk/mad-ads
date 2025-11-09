@@ -61,15 +61,15 @@ export const columnsDataComplex = [
     accessor: "name",
   },
   {
-    Header: "STATUS",
-    accessor: "status",
+    Header: "DESCRIPTION",
+    accessor: "description",
   },
   {
-    Header: "DATE",
-    accessor: "date",
+    Header: "PRICE",
+    accessor: "price",
   },
   {
-    Header: "PROGRESS",
-    accessor: "progress",
+    Header: "TAGS",
+    accessor: "tags",
   },
 ];
