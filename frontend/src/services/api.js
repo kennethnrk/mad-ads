@@ -315,3 +315,42 @@ export const getProducts = async (params = {}) => {
   });
 };
 
+/**
+ * Upload an ad video file
+ * @param {Object} adData - { file, owner_id, product_id, title, description, tags? }
+ */
+export const uploadAd = async (adData) => {
+  const { file, owner_id, product_id, title, description, tags } = adData;
+  
+  if (!file || !owner_id || !product_id || !title || !description) {
+    throw new Error('Missing required fields: file, owner_id, product_id, title, and description are required');
+  }
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('owner_id', owner_id);
+  formData.append('product_id', product_id);
+  formData.append('title', title);
+  formData.append('description', description);
+  if (tags) {
+    formData.append('tags', tags);
+  }
+  
+  try {
+    const response = await fetch(API_ENDPOINTS.AD_UPLOAD, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('[API] Ad upload failed:', error);
+    throw error;
+  }
+};
+

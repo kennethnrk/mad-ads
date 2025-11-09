@@ -3,7 +3,7 @@ import CardMenu from "components/card/CardMenu";
 import Card from "components/card";
 import Progress from "components/progress";
 import { MdCancel, MdCheckCircle, MdOutlineError, MdClose } from "react-icons/md";
-import { getProducts } from "services/api";
+import { getProducts, uploadAd } from "services/api";
 import { useAppSelector } from "store/hooks";
 import { company_id as DEFAULT_COMPANY_ID } from "constants";
 
@@ -189,31 +189,34 @@ export default function ComplexTable(props) {
       return;
     }
 
+    if (!adDescription.trim()) {
+      setUploadError("Please enter a description");
+      return;
+    }
+
+    if (!selectedProduct?.id) {
+      setUploadError("Please select a product");
+      return;
+    }
+
     setUploading(true);
     setUploadError(null);
     setUploadSuccess(false);
 
     try {
-      const formData = new FormData();
-      formData.append("file", uploadFile);
-      formData.append("title", adTitle);
-      formData.append("description", adDescription);
-      formData.append("tags", adTags);
-      if (selectedProduct?.id) {
-        formData.append("product_id", selectedProduct.id);
-      }
-
-      // TODO: Replace with actual ad upload endpoint
-      const response = await fetch("http://127.0.0.1:8000/api/v1/ads/upload", {
-        method: "POST",
-        body: formData,
+      // Use company_id from store, fallback to default
+      const ownerId = company_id || DEFAULT_COMPANY_ID;
+      
+      const result = await uploadAd({
+        file: uploadFile,
+        owner_id: ownerId,
+        product_id: selectedProduct.id,
+        title: adTitle,
+        description: adDescription,
+        tags: adTags || undefined,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-        throw new Error(errorData.detail || "Upload failed");
-      }
-
+      console.log("Ad uploaded successfully:", result);
       setUploadSuccess(true);
       setTimeout(() => {
         handleCloseModal();
@@ -357,7 +360,7 @@ export default function ComplexTable(props) {
             {/* Description Field */}
             <div className="mb-4">
               <label className="mb-2 block text-sm font-bold text-navy-700 dark:text-white">
-                Description
+                Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={adDescription}
@@ -365,6 +368,7 @@ export default function ComplexTable(props) {
                 placeholder="Enter ad description"
                 rows={4}
                 className="w-full rounded-lg border border-gray-300 bg-white p-2 text-sm dark:border-gray-600 dark:bg-navy-700 dark:text-white"
+                required
               />
             </div>
 
@@ -393,7 +397,7 @@ export default function ComplexTable(props) {
               <input
                 type="file"
                 onChange={handleFileChange}
-                accept="image/*,video/*"
+                accept="video/*"
                 className="w-full rounded-lg border border-gray-300 bg-white p-2 text-sm dark:border-gray-600 dark:bg-navy-700 dark:text-white"
               />
               {uploadFile && (
@@ -428,7 +432,7 @@ export default function ComplexTable(props) {
               </button>
               <button
                 onClick={handleUpload}
-                disabled={uploading || !uploadFile || !adTitle.trim()}
+                disabled={uploading || !uploadFile || !adTitle.trim() || !adDescription.trim()}
                 className="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {uploading ? "Uploading..." : "Upload"}

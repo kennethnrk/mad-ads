@@ -45,6 +45,9 @@ export const API_ENDPOINTS = {
   VIDEO_PREVIEW: `${API_BASE_URL}/api/v1/video/preview/res.mp4`,
 
   PRODUCTS: `${API_BASE_URL}/api/v1/products`,
+  
+  // Ad upload endpoint
+  AD_UPLOAD: `${API_BASE_URL}/api/v1/ads/upload`,
 };
 
 export default API_BASE_URL;

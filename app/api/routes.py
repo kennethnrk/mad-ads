@@ -1,7 +1,7 @@
 """API route handlers"""
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 import whisper
@@ -18,11 +18,11 @@ from app.api.models import (
     TranscriptionResponse,
     CompanyCreateRequest, CompanyResponse, CompanyUpdateRequest,
     ProductCreateRequest, ProductResponse, ProductUpdateRequest,
-    ImageUploadResponse,
-    AdInsertionRequest, AdInsertionResponse
+    ImageUploadResponse, AdUploadResponse
 )
 from app.database import get_db
-from app.db.schema import Company, Product
+from app.db.schema import Company, Product, Ad
+from app.config import settings
 from app.services.matching import score_match
 from app.services.ai import summarize_content_for_ads
 from app.snowflake.queries import snowflake_query, snowflake_vector_search
@@ -750,3 +750,154 @@ async def get_preview_video():
         filename="res.mp4"
     )
 
+
+# Ad upload route
+@router.post("/ads/upload", response_model=AdUploadResponse)
+async def upload_ad(
+    file: UploadFile = File(..., description="Video ad file to upload"),
+    owner_id: str = Form(..., description="ID of the ad owner/company"),
+    product_id: str = Form(..., description="ID of the product this ad is for"),
+    title: str = Form(..., description="Ad title"),
+    description: str = Form(..., description="Ad description"),
+    tags: Optional[str] = Form(None, description="Comma-separated list of tags"),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload a video ad file to Cloudinary and create an ad record.
+    
+    Accepts multipart form data with:
+    - file: Video file (required)
+    - owner_id: ID of the ad owner/company (required)
+    - product_id: ID of the product (required)
+    - title: Ad title (required)
+    - description: Ad description (required)
+    - tags: Comma-separated tags (optional)
+    
+    Returns the created ad with Cloudinary URL.
+    """
+    logger.info(
+        "ad_upload_requested",
+        filename=file.filename,
+        owner_id=owner_id,
+        product_id=product_id,
+        title=title
+    )
+    
+    # Validate Cloudinary credentials (only cloud_name and api_secret are required)
+    if not settings.cloudinary_cloud_name or not settings.cloudinary_api_secret:
+        raise HTTPException(
+            status_code=500,
+            detail="Cloudinary credentials not configured. Please set CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_SECRET environment variables."
+        )
+    
+    # Validate file type
+    content_type = file.content_type or mimetypes.guess_type(file.filename)[0]
+    file_ext = os.path.splitext(file.filename)[1].lower() if file.filename else ""
+    video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv', '.wmv', '.m4v']
+    
+    if not content_type or not content_type.startswith('video/'):
+        if file_ext not in video_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File must be a video file. Got: {content_type or 'unknown'}, extension: {file_ext}"
+            )
+    
+    # Verify product exists
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail=f"Product with id {product_id} not found")
+    
+    try:
+        # Import cloudinary
+        import cloudinary  # pyright: ignore[reportMissingImports]
+        import cloudinary.uploader  # pyright: ignore[reportMissingImports]
+        
+        # Configure Cloudinary (api_key is optional)
+        config_dict = {
+            "cloud_name": settings.cloudinary_cloud_name,
+            "api_secret": settings.cloudinary_api_secret
+        }
+        if settings.cloudinary_api_key:
+            config_dict["api_key"] = settings.cloudinary_api_key
+        
+        cloudinary.config(**config_dict)
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Upload to Cloudinary
+        logger.info("uploading_to_cloudinary", filename=file.filename, size=len(file_content))
+        
+        # Use a unique public_id to avoid conflicts
+        public_id = f"ads/{owner_id}/{uuid.uuid4()}"
+        
+        upload_result = cloudinary.uploader.upload(
+            file_content,
+            resource_type="video",
+            public_id=public_id,
+            folder="madads",
+            overwrite=False,
+            use_filename=True,
+            unique_filename=True
+        )
+        
+        cloudinary_url = upload_result.get("secure_url") or upload_result.get("url")
+        cloudinary_public_id = upload_result.get("public_id")
+        
+        logger.info(
+            "cloudinary_upload_success",
+            url=cloudinary_url,
+            public_id=cloudinary_public_id,
+            format=upload_result.get("format"),
+            duration=upload_result.get("duration")
+        )
+        
+        # Parse tags
+        tag_list = []
+        if tags:
+            tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
+        
+        # Create ad record in database
+        ad = Ad(
+            id=str(uuid.uuid4()),
+            owner_id=owner_id,
+            product_id=product_id,
+            title=title,
+            description=description,
+            tags=tag_list,
+            url=cloudinary_url
+        )
+        
+        db.add(ad)
+        db.commit()
+        db.refresh(ad)
+        
+        logger.info("ad_created", ad_id=ad.id, url=cloudinary_url)
+        
+        return AdUploadResponse(
+            id=ad.id,
+            owner_id=ad.owner_id,
+            product_id=ad.product_id,
+            title=ad.title,
+            description=ad.description,
+            tags=ad.tags if isinstance(ad.tags, list) else [],
+            url=ad.url,
+            cloudinary_public_id=cloudinary_public_id,
+            message="Ad uploaded successfully"
+        )
+        
+    except Exception as e:
+        db.rollback()
+        logger.error("ad_upload_error", error=str(e), exc_info=True)
+        
+        # Provide more specific error messages
+        if "cloudinary" in str(e).lower():
+            raise HTTPException(
+                status_code=500,
+                detail=f"Cloudinary upload failed: {str(e)}"
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload ad: {str(e)}"
+            )
