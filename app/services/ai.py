@@ -69,7 +69,7 @@ async def summarize_content_for_ads(transcript: str) -> Dict[str, Any]:
     try:
         import google.generativeai as genai
         genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel('gemini-flash-latest')
+        model = genai.GenerativeModel('gemini-flash-latest', generation_config={"temperature": 0.5})
         
         prompt = f"""Analyze this content for product ad matching. Return ONLY valid JSON (no markdown):
 
