@@ -79,6 +79,7 @@ const Upload = ({ onUploadStart, onUploadComplete, onUploadError }) => {
         videoFile: file
       };
       setResults(resultWithFile);
+      console.log(resultWithFile);
       onUploadComplete?.(resultWithFile);
     } catch (err) {
       console.error('[Upload] Video processing error', err);
@@ -141,15 +142,15 @@ const Upload = ({ onUploadStart, onUploadComplete, onUploadError }) => {
               <p className="mt-2 text-sm font-medium text-gray-600">
                 {results.count} ads matched
               </p>
-              <button
+              <div
                 onClick={(e) => {
                   e.stopPropagation();
                   handleReset();
                 }}
-                className="mt-4 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
+                className="mt-4 cursor-pointer rounded-lg bg-brand-500 px-4 py-2 text-center text-sm font-medium text-white hover:bg-brand-600"
               >
                 Upload Another
-              </button>
+              </div>
             </>
           ) : (
             <>

@@ -21,10 +21,9 @@ from app.api.models import (
 )
 from app.database import get_db
 from app.db.schema import Company, Product
-from app.mcp.tools import (
-    score_match, snowflake_query, snowflake_vector_search, summarize_content_for_ads,
-    storage_put, storage_url
-)
+from app.services.matching import score_match
+from app.services.ai import summarize_content_for_ads
+from app.snowflake.queries import snowflake_query, snowflake_vector_search, storage_put, storage_url
 from app.services.content_generator import generate_company_content, generate_product_content
 from app.logging_config import get_logger
 import uuid
@@ -196,8 +195,24 @@ async def transcribe_video(
                 topics = list(set([word for word in words if len(word) > 5]))[:10]
                 
                 # Summarize content for ad matching
-                logger.info("summarizing_content_for_ads")
-                summary = await summarize_content_for_ads(result["text"])
+                logger.info("summarizing_content_for_ads", 
+                           transcript_length=len(result["text"]),
+                           transcript_preview=result["text"][:100])
+                try:
+                    summary = await summarize_content_for_ads(result["text"])
+                    logger.info("summary_received",
+                               has_summary=bool(summary),
+                               has_embedding_query=bool(summary.get("embedding_query")),
+                               embedding_query_length=len(summary.get("embedding_query", "")),
+                               embedding_query_preview=summary.get("embedding_query", "")[:150] if summary.get("embedding_query") else None,
+                               query=summary.get("query") if summary else None)
+                except Exception as summary_error:
+                    logger.error("summary_generation_failed", 
+                                error=str(summary_error), 
+                                error_type=type(summary_error).__name__,
+                                exc_info=True)
+                    # Don't set summary - let it be None so process-and-match can regenerate
+                    summary = None
                 
                 response = TranscriptionResponse(
                     text=result["text"],
@@ -256,18 +271,43 @@ async def process_video_and_find_ads(
     
     try:
         # Step 1: Transcribe the video
-        logger.info("step_1_transcribing_video")
+        logger.info("step_1_transcribing_video", filename=file.filename, model_size=model_size)
         transcription_response = await transcribe_video(file, model_size)
         transcript = transcription_response.text
         summary = transcription_response.summary
         
-        if not summary:
-            # Fallback: create summary if not included
+        logger.info("transcription_complete",
+                   transcript_length=len(transcript),
+                   has_summary_from_transcribe=bool(summary),
+                   summary_keys=list(summary.keys()) if summary else [])
+        
+        # Regenerate if summary is missing or is just the transcript (fallback case)
+        if not summary or (summary.get("embedding_query", "")[:100].strip() == transcript[:100].strip() if summary.get("embedding_query") else False):
+            if summary:
+                logger.warning("summary_is_transcript", 
+                             message="Regenerating summary - original was transcript",
+                             original_embedding_preview=summary.get("embedding_query", "")[:100])
+            else:
+                logger.warning("summary_missing", message="Creating summary - none from transcribe")
+            # This will now raise an error if JSON parsing fails - no more hiding it!
             summary = await summarize_content_for_ads(transcript)
+            logger.info("summary_ready", 
+                       has_embedding_query=bool(summary.get("embedding_query")),
+                       embedding_length=len(summary.get("embedding_query", "")),
+                       embedding_preview=summary.get("embedding_query", "")[:150],
+                       is_still_transcript=summary.get("embedding_query", "")[:100].strip() == transcript[:100].strip() if summary.get("embedding_query") else False)
         
         # Step 2: Find matching ads using Cortex Search
-        logger.info("step_2_finding_matching_ads")
+        logger.info("step_2_finding_matching_ads",
+                   summary_has_embedding_query=bool(summary.get("embedding_query")),
+                   summary_has_query=bool(summary.get("query")),
+                   embedding_query_length=len(summary.get("embedding_query", "")),
+                   embedding_query_preview=summary.get("embedding_query", "")[:150] if summary.get("embedding_query") else None)
         search_text = summary.get("embedding_query") or summary.get("query") or transcript[:200]
+        logger.info("search_text_selected",
+                   search_text_length=len(search_text),
+                   search_text_preview=search_text[:150],
+                   source="embedding_query" if summary.get("embedding_query") else ("query" if summary.get("query") else "transcript"))
         
         # Default columns if not specified - include all metadata fields
         if not columns:
@@ -277,7 +317,6 @@ async def process_video_and_find_ads(
                 "category", 
                 "price", 
                 "image_url", 
-                "description",
                 "company",
                 "brand",
                 "product",
@@ -313,6 +352,7 @@ async def process_video_and_find_ads(
         for idx, ad in enumerate(ranked_ads):
             ad["rank"] = idx + 1
         
+        print(summary)
         return {
             "success": True,
             "transcription": {
@@ -375,7 +415,6 @@ async def find_ads_from_transcript(
                 "category", 
                 "price", 
                 "image_url", 
-                "description",
                 "company",
                 "brand",
                 "product",
