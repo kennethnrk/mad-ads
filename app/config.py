@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     snowflake_schema: Optional[str] = None
     snowflake_role: Optional[str] = None
     snowflake_cortex_service_name: str = "product_search"
+    snowflake_account_url: Optional[str] = None  # e.g., "https://ZGXJKBZ-LH19094.snowflakecomputing.com"
+    snowflake_pat: Optional[str] = None  # Personal Access Token for REST API
     
     # Gemini AI Configuration
     gemini_api_key: Optional[str] = None

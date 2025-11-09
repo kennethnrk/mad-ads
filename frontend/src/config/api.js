@@ -36,6 +36,10 @@ export const API_ENDPOINTS = {
   // Snowflake test endpoints
   SNOWFLAKE_QUERY: `${API_BASE_URL}/api/v1/snowflake/query`,
   SNOWFLAKE_VECTOR_SEARCH: `${API_BASE_URL}/api/v1/snowflake/vector-search`,
+  
+  // Video processing endpoints
+  VIDEO_PROCESS_AND_MATCH: `${API_BASE_URL}/api/v1/video/process-and-match`,
+  TRANSCRIBE: `${API_BASE_URL}/api/v1/transcribe`,
 };
 
 export default API_BASE_URL;

@@ -211,3 +211,45 @@ export const logoutUser = () => {
   localStorage.removeItem('authToken');
 };
 
+/**
+ * Process video and find matching ads
+ * @param {File} videoFile - Video file to upload
+ * @param {Object} options - { model_size?, limit? }
+ */
+export const processVideoAndMatch = async (videoFile, options = {}) => {
+  console.log('[API] Processing video and finding matches', { 
+    fileName: videoFile.name, 
+    fileSize: videoFile.size,
+    options 
+  });
+  
+  const formData = new FormData();
+  formData.append('file', videoFile);
+  if (options.model_size) formData.append('model_size', options.model_size);
+  if (options.limit) formData.append('limit', options.limit.toString());
+  
+  try {
+    const response = await fetch(API_ENDPOINTS.VIDEO_PROCESS_AND_MATCH, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      console.error('[API] Video processing failed:', errorData);
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('[API] Video processing successful', { 
+      success: result.success,
+      adsFound: result.count,
+      transcriptionLength: result.transcription?.text?.length 
+    });
+    return result;
+  } catch (error) {
+    console.error('[API] Video processing error:', error);
+    throw error;
+  }
+};
+
