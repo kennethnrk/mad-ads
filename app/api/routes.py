@@ -18,7 +18,8 @@ from app.api.models import (
     TranscriptionResponse,
     CompanyCreateRequest, CompanyResponse, CompanyUpdateRequest,
     ProductCreateRequest, ProductResponse, ProductUpdateRequest,
-    ImageUploadResponse, AdUploadResponse
+    ImageUploadResponse, AdUploadResponse,
+    AdInsertionRequest, AdInsertionResponse
 )
 from app.database import get_db
 from app.db.schema import Company, Product, Ad

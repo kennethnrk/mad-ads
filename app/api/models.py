@@ -163,3 +163,22 @@ class AdUploadResponse(BaseModel):
     url: str
     cloudinary_public_id: Optional[str] = None
     message: str = "Ad uploaded successfully"
+
+
+class Placement(BaseModel):
+    """Single ad placement"""
+    timestamp: float = Field(..., ge=0, description="Timestamp in seconds where to insert ad")
+    ad_id: Optional[str] = Field(None, description="Ad ID (optional, uses demo_ad for MVP)")
+
+
+class AdInsertionRequest(BaseModel):
+    """Request for inserting ads into video"""
+    placements: List[Placement] = Field(..., description="List of ad placements with timestamps")
+
+
+class AdInsertionResponse(BaseModel):
+    """Response for ad insertion"""
+    success: bool
+    output_video_path: str
+    preview_url: Optional[str] = None
+    message: str = "Ads inserted successfully"
