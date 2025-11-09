@@ -22,7 +22,9 @@ def cortex_search_rest(query: str, columns=None, filter_obj=None, limit: int = 5
     
     url = f"{settings.snowflake_account_url}/api/v2/databases/{settings.snowflake_database}/{settings.snowflake_schema}/cortex-search-services/{settings.snowflake_cortex_service_name}:query"
     
-    payload = {"query": query, "columns": ["id","product_name", "company_name", "category", "price", "image_url"], "limit": limit}
+    # Use provided columns or default (excluding product_name which is not indexed)
+    default_columns = ["id", "company_name", "category", "price", "image_url"]
+    payload = {"query": query, "columns": columns if columns else default_columns, "limit": limit}
     if filter_obj:
         payload["filter"] = filter_obj
 

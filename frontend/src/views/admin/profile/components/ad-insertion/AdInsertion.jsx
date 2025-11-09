@@ -194,7 +194,7 @@ const AdInsertion = ({ transcription, videoFile, uploadResults }) => {
           )}
           {!uploadResults?.ads && (
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
-              TESTING MODE
+              DEMO MODE
             </span>
           )}
         </div>
@@ -328,11 +328,8 @@ const AdInsertion = ({ transcription, videoFile, uploadResults }) => {
       {/* Info Footer */}
       <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-navy-700">
         <p className="text-xs text-gray-600 dark:text-gray-400">
-          <strong>Testing Mode:</strong> This section is always visible for testing purposes using hardcoded test videos (videoplayback.mp4 and demo_ad.mp4).
+          <strong>Demo Mode:</strong> This section appears after video processing. 
           Use the "+ Add Marker" button to place ads at specific timestamps, then generate the final video.
-          <span className="block mt-1 text-yellow-700 dark:text-yellow-400">
-            ⚠️ This shortcut will be disabled after feature finalization.
-          </span>
         </p>
       </div>
     </Card>

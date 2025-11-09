@@ -39,29 +39,6 @@ const routes = [
     component: <MainDashboard />,
   },
   {
-    name: "NFT Marketplace",
-    layout: "/admin",
-    path: "nft-marketplace",
-    icon: <MdOutlineShoppingCart className="h-6 w-6" />,
-    component: <NFTMarketplace />,
-    secondary: true,
-  },
-  {
-    name: "Data Tables",
-    layout: "/admin",
-    icon: <MdBarChart className="h-6 w-6" />,
-    path: "data-tables",
-    component: <DataTables />,
-  },
-
-  {
-    name: "API Testing",
-    layout: "/admin",
-    path: "testing",
-    icon: <MdBarChart className="h-6 w-6" />,
-    component: <TestingDashboard />,
-  },
-  {
     name: "Sign In",
     layout: "/auth",
     path: "sign-in",

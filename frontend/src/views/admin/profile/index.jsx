@@ -45,9 +45,9 @@ const AdStudio = () => {
           <Banner />
         </div>
 
-        <div className="col-span-3 lg:!mb-0">
+        {/* <div className="col-span-3 lg:!mb-0">
           <Storage />
-        </div>
+        </div> */}
 
         <div className="col-span-5 lg:!mb-0">
           {/* Placeholder for future content */}
@@ -77,14 +77,16 @@ const AdStudio = () => {
         </div>
       )}
 
-      {/* Ad Insertion Section - Always visible for testing with hardcoded videos */}
-      <div className="w-full">
-        <AdInsertion 
-          transcription={uploadResults?.transcription}
-          videoFile={uploadResults?.videoFile}
-          uploadResults={uploadResults}
-        />
-      </div>
+      {/* Ad Insertion Section - Show only after video processing */}
+      {uploadResults && (
+        <div className="w-full">
+          <AdInsertion 
+            transcription={uploadResults?.transcription}
+            videoFile={uploadResults?.videoFile}
+            uploadResults={uploadResults}
+          />
+        </div>
+      )}
     </div>
   );
 };

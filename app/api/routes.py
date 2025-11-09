@@ -316,8 +316,9 @@ async def process_video_and_find_ads(
                    source="embedding_query" if summary.get("embedding_query") else ("query" if summary.get("query") else "transcript"))
         
         # Default columns if not specified - include all metadata fields
+        # Note: product_name is not indexed in Cortex Search, so we exclude it
         if not columns:
-            columns = ["id","product_name", "company_name", "category", "price", "image_url"]
+            columns = ["id", "company_name", "category", "price", "image_url"]
         
         ads = await snowflake_vector_search(
             text=search_text,
@@ -332,7 +333,12 @@ async def process_video_and_find_ads(
         ranked_ads = []
         for idx, ad in enumerate(ads):
             logger.info("ad", ad=ad)
-            cosine_sim = ad.get("@scores").get("cosine_similarity", 0.0)
+            # Safely extract cosine similarity, handling cases where @scores might be None
+            scores = ad.get("@scores") or {}
+            cosine_sim = scores.get("cosine_similarity", 0.0) if isinstance(scores, dict) else 0.0
+            # Fallback to @score or score if @scores is not available
+            if cosine_sim == 0.0:
+                cosine_sim = ad.get("@score", ad.get("score", 0.0))
 
             ranked_ad = {
                 **ad,
@@ -406,8 +412,20 @@ async def find_ads_from_transcript(
         search_text = summary.get("embedding_query") or summary.get("query") or transcript[:200]
         
         # Default columns if not specified - include all metadata fields
+        # Note: product_name is not indexed in Cortex Search, so we exclude it
         if not columns:
-            columns = ["id","product_name", "company_name", "category", "price", "image_url"]
+            columns = [
+                "id", 
+                "name", 
+                "category", 
+                "price", 
+                "image_url", 
+                "company",
+                "brand",
+                "product",
+                "product_description",
+                "manufacturer"
+            ]
         
         # Search for relevant ads using Cortex
         ads = await snowflake_vector_search(
