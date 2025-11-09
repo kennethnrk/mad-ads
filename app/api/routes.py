@@ -10,6 +10,7 @@ import os
 import subprocess
 import mimetypes
 import shutil
+import requests
 
 from app.api.models import (
     MatchRequest, MatchResponse, MatchResult, 
@@ -563,6 +564,30 @@ async def create_product(req: ProductCreateRequest, db: Session = Depends(get_db
         db.add(product)
         db.commit()
         db.refresh(product)
+
+        import asyncio
+        import httpx
+
+        async def async_notify_enrich(product):
+            try:
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        "http://localhost:8001/enrich",
+                        json={
+                            "id": product.id,
+                            "product_name": product.name,
+                            "company_name": product.company_id,
+                            "product_short_description": product.description,
+                            "price": product.price,
+                            "currency": "USD",
+                            "image_url": product.img_url
+                        },
+                        timeout=5
+                    )
+            except Exception:
+                pass  # Fire and forget, don't raise
+
+        asyncio.create_task(async_notify_enrich(product))
 
         return ProductResponse(
             id=product.id,
