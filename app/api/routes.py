@@ -14,11 +14,21 @@ from app.api.models import (
     MatchRequest, MatchResponse, MatchResult, 
     MatchReason, HealthResponse,
     SnowflakeQueryRequest, SnowflakeVectorSearchRequest, SnowflakeTestResponse,
-    TranscriptionResponse
+    TranscriptionResponse,
+    CompanyCreateRequest, CompanyResponse, CompanyUpdateRequest,
+    ProductCreateRequest, ProductResponse, ProductUpdateRequest,
+    ImageUploadResponse
 )
 from app.database import get_db
-from app.mcp.tools import score_match, snowflake_query, snowflake_vector_search, summarize_content_for_ads
+from app.db.schema import Company, Product
+from app.mcp.tools import (
+    score_match, snowflake_query, snowflake_vector_search, summarize_content_for_ads,
+    storage_put, storage_url
+)
+from app.services.content_generator import generate_company_content, generate_product_content
 from app.logging_config import get_logger
+import uuid
+from datetime import datetime
 
 logger = get_logger(__name__)
 
@@ -434,4 +444,574 @@ async def test_snowflake_vector_search(request: SnowflakeVectorSearchRequest):
     except Exception as e:
         logger.error("snowflake_vector_search_test_error", error=str(e), exc_info=True)
         return SnowflakeTestResponse(success=False, error=str(e))
+
+
+# Company onboarding routes
+@router.post("/companies", response_model=CompanyResponse, status_code=201)
+async def create_company(
+    request: CompanyCreateRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new company and generate LLM-powered content.
+    """
+    logger.info("create_company_requested", company_name=request.name)
+    
+    try:
+        # Generate company ID
+        company_id = f"company_{uuid.uuid4().hex[:12]}"
+        
+        # Generate LLM content
+        logger.info("generating_company_content")
+        llm_content = await generate_company_content(
+            name=request.name,
+            description=request.description,
+            industry=request.industry,
+            website=request.website
+        )
+        
+        # Create company record
+        company = Company(
+            id=company_id,
+            name=request.name,
+            description=request.description,
+            industry=request.industry,
+            website=request.website,
+            contact_email=request.contact_email,
+            contact_phone=request.contact_phone,
+            brand_voice=llm_content.get("brand_voice"),
+            company_summary=llm_content.get("company_summary"),
+            target_audience=request.target_audience or llm_content.get("target_audience", {}),
+            brand_keywords=llm_content.get("brand_keywords", []),
+            metadata=request.metadata or {}
+        )
+        
+        db.add(company)
+        db.commit()
+        db.refresh(company)
+        
+        logger.info("company_created", company_id=company_id)
+        
+        return CompanyResponse(
+            id=company.id,
+            name=company.name,
+            description=company.description,
+            industry=company.industry,
+            website=company.website,
+            contact_email=company.contact_email,
+            contact_phone=company.contact_phone,
+            logo_url=company.logo_url,
+            brand_voice=company.brand_voice,
+            company_summary=company.company_summary,
+            target_audience=company.target_audience,
+            brand_keywords=company.brand_keywords,
+            metadata=company.metadata,
+            is_active=company.is_active,
+            created_at=company.created_at,
+            updated_at=company.updated_at
+        )
+    except Exception as e:
+        logger.error("create_company_error", error=str(e), exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create company: {str(e)}")
+
+
+@router.get("/companies/{company_id}", response_model=CompanyResponse)
+async def get_company(
+    company_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get a company by ID"""
+    logger.info("get_company_requested", company_id=company_id)
+    
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    return CompanyResponse(
+        id=company.id,
+        name=company.name,
+        description=company.description,
+        industry=company.industry,
+        website=company.website,
+        contact_email=company.contact_email,
+        contact_phone=company.contact_phone,
+        logo_url=company.logo_url,
+        brand_voice=company.brand_voice,
+        company_summary=company.company_summary,
+        target_audience=company.target_audience,
+        brand_keywords=company.brand_keywords,
+        metadata=company.metadata,
+        is_active=company.is_active,
+        created_at=company.created_at,
+        updated_at=company.updated_at
+    )
+
+
+@router.get("/companies", response_model=List[CompanyResponse])
+async def list_companies(
+    skip: int = 0,
+    limit: int = 100,
+    is_active: Optional[bool] = None,
+    db: Session = Depends(get_db)
+):
+    """List all companies"""
+    logger.info("list_companies_requested", skip=skip, limit=limit)
+    
+    query = db.query(Company)
+    if is_active is not None:
+        query = query.filter(Company.is_active == is_active)
+    
+    companies = query.offset(skip).limit(limit).all()
+    
+    return [
+        CompanyResponse(
+            id=company.id,
+            name=company.name,
+            description=company.description,
+            industry=company.industry,
+            website=company.website,
+            contact_email=company.contact_email,
+            contact_phone=company.contact_phone,
+            logo_url=company.logo_url,
+            brand_voice=company.brand_voice,
+            company_summary=company.company_summary,
+            target_audience=company.target_audience,
+            brand_keywords=company.brand_keywords,
+            metadata=company.metadata,
+            is_active=company.is_active,
+            created_at=company.created_at,
+            updated_at=company.updated_at
+        )
+        for company in companies
+    ]
+
+
+@router.put("/companies/{company_id}", response_model=CompanyResponse)
+async def update_company(
+    company_id: str,
+    request: CompanyUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    """Update a company"""
+    logger.info("update_company_requested", company_id=company_id)
+    
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    # Update fields
+    if request.name is not None:
+        company.name = request.name
+    if request.description is not None:
+        company.description = request.description
+    if request.industry is not None:
+        company.industry = request.industry
+    if request.website is not None:
+        company.website = request.website
+    if request.contact_email is not None:
+        company.contact_email = request.contact_email
+    if request.contact_phone is not None:
+        company.contact_phone = request.contact_phone
+    if request.target_audience is not None:
+        company.target_audience = request.target_audience
+    if request.metadata is not None:
+        company.metadata = request.metadata
+    if request.is_active is not None:
+        company.is_active = request.is_active
+    
+    # Regenerate LLM content if key fields changed
+    if request.name or request.description or request.industry or request.website:
+        logger.info("regenerating_company_content")
+        llm_content = await generate_company_content(
+            name=company.name,
+            description=company.description,
+            industry=company.industry,
+            website=company.website
+        )
+        company.brand_voice = llm_content.get("brand_voice")
+        company.company_summary = llm_content.get("company_summary")
+        company.brand_keywords = llm_content.get("brand_keywords", [])
+        if not request.target_audience:
+            company.target_audience = llm_content.get("target_audience", {})
+    
+    company.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(company)
+    
+    return CompanyResponse(
+        id=company.id,
+        name=company.name,
+        description=company.description,
+        industry=company.industry,
+        website=company.website,
+        contact_email=company.contact_email,
+        contact_phone=company.contact_phone,
+        logo_url=company.logo_url,
+        brand_voice=company.brand_voice,
+        company_summary=company.company_summary,
+        target_audience=company.target_audience,
+        brand_keywords=company.brand_keywords,
+        metadata=company.metadata,
+        is_active=company.is_active,
+        created_at=company.created_at,
+        updated_at=company.updated_at
+    )
+
+
+# Product onboarding routes
+@router.post("/products", response_model=ProductResponse, status_code=201)
+async def create_product(
+    request: ProductCreateRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new product and generate LLM-powered content.
+    """
+    logger.info("create_product_requested", product_name=request.name, company_id=request.company_id)
+    
+    try:
+        # Verify company exists
+        company = db.query(Company).filter(Company.id == request.company_id).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        # Generate product ID
+        product_id = f"product_{uuid.uuid4().hex[:12]}"
+        
+        # Generate LLM content
+        logger.info("generating_product_content")
+        llm_content = await generate_product_content(
+            name=request.name,
+            description=request.description,
+            category=request.category,
+            company_name=company.name,
+            features=request.features,
+            use_cases=request.use_cases,
+            pain_points=request.pain_points
+        )
+        
+        # Create product record
+        product = Product(
+            id=product_id,
+            company_id=request.company_id,
+            name=request.name,
+            description=request.description,
+            price=request.price,
+            currency=request.currency or "USD",
+            category=request.category,
+            embedded_text=llm_content.get("embedded_text"),
+            ad_phrases=request.ad_phrases or llm_content.get("ad_phrases", []),
+            use_cases=request.use_cases or llm_content.get("use_cases", []),
+            product_summary=llm_content.get("product_summary"),
+            features=request.features or [],
+            target_audience=request.target_audience or llm_content.get("target_audience", {}),
+            pain_points=request.pain_points or llm_content.get("pain_points", []),
+            keywords=request.keywords or llm_content.get("keywords", []),
+            metadata=request.metadata or {}
+        )
+        
+        db.add(product)
+        db.commit()
+        db.refresh(product)
+        
+        logger.info("product_created", product_id=product_id)
+        
+        return ProductResponse(
+            id=product.id,
+            company_id=product.company_id,
+            name=product.name,
+            description=product.description,
+            price=product.price,
+            currency=product.currency,
+            category=product.category,
+            image_urls=product.image_urls,
+            embedded_text=product.embedded_text,
+            ad_phrases=product.ad_phrases,
+            use_cases=product.use_cases,
+            product_summary=product.product_summary,
+            features=product.features,
+            target_audience=product.target_audience,
+            pain_points=product.pain_points,
+            keywords=product.keywords,
+            metadata=product.metadata,
+            is_active=product.is_active,
+            created_at=product.created_at,
+            updated_at=product.updated_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("create_product_error", error=str(e), exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create product: {str(e)}")
+
+
+@router.get("/products/{product_id}", response_model=ProductResponse)
+async def get_product(
+    product_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get a product by ID"""
+    logger.info("get_product_requested", product_id=product_id)
+    
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    return ProductResponse(
+        id=product.id,
+        company_id=product.company_id,
+        name=product.name,
+        description=product.description,
+        price=product.price,
+        currency=product.currency,
+        category=product.category,
+        image_urls=product.image_urls,
+        embedded_text=product.embedded_text,
+        ad_phrases=product.ad_phrases,
+        use_cases=product.use_cases,
+        product_summary=product.product_summary,
+        features=product.features,
+        target_audience=product.target_audience,
+        pain_points=product.pain_points,
+        keywords=product.keywords,
+        metadata=product.metadata,
+        is_active=product.is_active,
+        created_at=product.created_at,
+        updated_at=product.updated_at
+    )
+
+
+@router.get("/products", response_model=List[ProductResponse])
+async def list_products(
+    company_id: Optional[str] = None,
+    category: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    is_active: Optional[bool] = None,
+    db: Session = Depends(get_db)
+):
+    """List products with optional filters"""
+    logger.info("list_products_requested", company_id=company_id, category=category, skip=skip, limit=limit)
+    
+    query = db.query(Product)
+    
+    if company_id:
+        query = query.filter(Product.company_id == company_id)
+    if category:
+        query = query.filter(Product.category == category)
+    if is_active is not None:
+        query = query.filter(Product.is_active == is_active)
+    
+    products = query.offset(skip).limit(limit).all()
+    
+    return [
+        ProductResponse(
+            id=product.id,
+            company_id=product.company_id,
+            name=product.name,
+            description=product.description,
+            price=product.price,
+            currency=product.currency,
+            category=product.category,
+            image_urls=product.image_urls,
+            embedded_text=product.embedded_text,
+            ad_phrases=product.ad_phrases,
+            use_cases=product.use_cases,
+            product_summary=product.product_summary,
+            features=product.features,
+            target_audience=product.target_audience,
+            pain_points=product.pain_points,
+            keywords=product.keywords,
+            metadata=product.metadata,
+            is_active=product.is_active,
+            created_at=product.created_at,
+            updated_at=product.updated_at
+        )
+        for product in products
+    ]
+
+
+@router.put("/products/{product_id}", response_model=ProductResponse)
+async def update_product(
+    product_id: str,
+    request: ProductUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    """Update a product"""
+    logger.info("update_product_requested", product_id=product_id)
+    
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Update fields
+    if request.name is not None:
+        product.name = request.name
+    if request.description is not None:
+        product.description = request.description
+    if request.price is not None:
+        product.price = request.price
+    if request.currency is not None:
+        product.currency = request.currency
+    if request.category is not None:
+        product.category = request.category
+    if request.ad_phrases is not None:
+        product.ad_phrases = request.ad_phrases
+    if request.use_cases is not None:
+        product.use_cases = request.use_cases
+    if request.features is not None:
+        product.features = request.features
+    if request.target_audience is not None:
+        product.target_audience = request.target_audience
+    if request.pain_points is not None:
+        product.pain_points = request.pain_points
+    if request.keywords is not None:
+        product.keywords = request.keywords
+    if request.metadata is not None:
+        product.metadata = request.metadata
+    if request.is_active is not None:
+        product.is_active = request.is_active
+    
+    # Regenerate LLM content if key fields changed
+    if request.name or request.description or request.category or request.features or request.use_cases or request.pain_points:
+        logger.info("regenerating_product_content")
+        company = db.query(Company).filter(Company.id == product.company_id).first()
+        llm_content = await generate_product_content(
+            name=product.name,
+            description=product.description,
+            category=product.category,
+            company_name=company.name if company else None,
+            features=product.features,
+            use_cases=product.use_cases,
+            pain_points=product.pain_points
+        )
+        product.embedded_text = llm_content.get("embedded_text")
+        product.product_summary = llm_content.get("product_summary")
+        if not request.ad_phrases:
+            product.ad_phrases = llm_content.get("ad_phrases", [])
+        if not request.keywords:
+            product.keywords = llm_content.get("keywords", [])
+        if not request.target_audience:
+            product.target_audience = llm_content.get("target_audience", {})
+        if not request.pain_points:
+            product.pain_points = llm_content.get("pain_points", [])
+    
+    product.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(product)
+    
+    return ProductResponse(
+        id=product.id,
+        company_id=product.company_id,
+        name=product.name,
+        description=product.description,
+        price=product.price,
+        currency=product.currency,
+        category=product.category,
+        image_urls=product.image_urls,
+        embedded_text=product.embedded_text,
+        ad_phrases=product.ad_phrases,
+        use_cases=product.use_cases,
+        product_summary=product.product_summary,
+        features=product.features,
+        target_audience=product.target_audience,
+        pain_points=product.pain_points,
+        keywords=product.keywords,
+        metadata=product.metadata,
+        is_active=product.is_active,
+        created_at=product.created_at,
+        updated_at=product.updated_at
+    )
+
+
+# Image upload routes
+@router.post("/companies/{company_id}/logo", response_model=ImageUploadResponse)
+async def upload_company_logo(
+    company_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Upload a company logo"""
+    logger.info("upload_company_logo_requested", company_id=company_id, filename=file.filename)
+    
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Generate storage key
+        file_ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+        storage_key = f"companies/{company_id}/logo{file_ext}"
+        
+        # Upload to storage
+        storage_id = await storage_put(file_content, storage_key)
+        
+        # Get URL
+        image_url = await storage_url(storage_id)
+        
+        # Update company record
+        company.logo_url = image_url
+        db.commit()
+        
+        logger.info("company_logo_uploaded", company_id=company_id, image_url=image_url)
+        
+        return ImageUploadResponse(
+            image_url=image_url,
+            storage_id=storage_id,
+            message="Company logo uploaded successfully"
+        )
+    except Exception as e:
+        logger.error("upload_company_logo_error", error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to upload logo: {str(e)}")
+
+
+@router.post("/products/{product_id}/images", response_model=ImageUploadResponse)
+async def upload_product_image(
+    product_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Upload a product image"""
+    logger.info("upload_product_image_requested", product_id=product_id, filename=file.filename)
+    
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Generate storage key
+        file_ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+        image_id = uuid.uuid4().hex[:8]
+        storage_key = f"products/{product_id}/images/{image_id}{file_ext}"
+        
+        # Upload to storage
+        storage_id = await storage_put(file_content, storage_key)
+        
+        # Get URL
+        image_url = await storage_url(storage_id)
+        
+        # Update product record
+        if product.image_urls is None:
+            product.image_urls = []
+        product.image_urls.append(image_url)
+        db.commit()
+        
+        logger.info("product_image_uploaded", product_id=product_id, image_url=image_url)
+        
+        return ImageUploadResponse(
+            image_url=image_url,
+            storage_id=storage_id,
+            message="Product image uploaded successfully"
+        )
+    except Exception as e:
+        logger.error("upload_product_image_error", error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
