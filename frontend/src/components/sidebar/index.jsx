@@ -29,7 +29,7 @@ const Sidebar = ({ open, onClose }) => {
       {/* Nav item */}
 
       <ul className="mb-auto pt-1">
-        <Links routes={routes} />
+        <Links routes={routes.filter((route) => route.layout === "/admin")} />
       </ul>
 
       {/* Free Horizon Card */}

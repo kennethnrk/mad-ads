@@ -26,8 +26,8 @@ const Storage = () => {
 
       <div className="flex flex-col">
         <div className="flex justify-between">
-          <p className="text-sm font-medium text-gray-600">25.6 GB</p>
-          <p className="text-sm font-medium text-gray-600">50 GB</p>
+          <p className="text-sm font-medium text-gray-600">$ 500</p>
+          <p className="text-sm font-medium text-gray-600">$ 1000</p>
         </div>
         <div className="mt-2 flex h-3 w-full items-center rounded-full bg-lightPrimary dark:!bg-navy-700">
           <span className="h-full w-1/2 rounded-full bg-brand-500 dark:!bg-white" />

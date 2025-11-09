@@ -9,21 +9,21 @@ const Upload = () => {
         <button className="flex h-full w-full flex-col items-center justify-center rounded-xl border-[2px] border-dashed border-gray-200 py-3 dark:!border-navy-700 lg:pb-0">
           <MdFileUpload className="text-[80px] text-brand-500 dark:text-white" />
           <h4 className="text-xl font-bold text-brand-500 dark:text-white">
-            Upload Files
+            Upload Videos
           </h4>
           <p className="mt-2 text-sm font-medium text-gray-600">
-            PNG, JPG and GIF files are allowed
+            MP4 and AVI files are allowed
           </p>
         </button>
       </div>
 
       <div className="col-span-5 flex h-full w-full flex-col justify-center overflow-hidden rounded-xl bg-white pl-3 pb-4 dark:!bg-navy-800">
         <h5 className="text-left text-xl font-bold leading-9 text-navy-700 dark:text-white">
-          Complete Your Profile
+          Upload your Product Details
         </h5>
         <p className="leading-1 mt-2 text-base font-normal text-gray-600">
-          Stay on the pulse of distributed projects with an anline whiteboard to
-          plan, coordinate and discuss
+          Provide all the necessary information to publish your product advertisements on the
+          marketplace.
         </p>
         <button
           href=" "

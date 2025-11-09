@@ -16,11 +16,18 @@ import {
   MdHome,
   MdOutlineShoppingCart,
   MdBarChart,
-  MdPerson,
+  MdSpaceDashboard,
   MdLock,
 } from "react-icons/md";
 
 const routes = [
+    {
+    name: "Overview",
+    layout: "/admin",
+    path: "profile",
+    icon: <MdSpaceDashboard className="h-6 w-6" />,
+    component: <Profile />,
+  },
   {
     name: "Main Dashboard",
     layout: "/admin",
@@ -43,13 +50,7 @@ const routes = [
     path: "data-tables",
     component: <DataTables />,
   },
-  {
-    name: "Profile",
-    layout: "/admin",
-    path: "profile",
-    icon: <MdPerson className="h-6 w-6" />,
-    component: <Profile />,
-  },
+
   {
     name: "API Testing",
     layout: "/admin",
@@ -64,12 +65,12 @@ const routes = [
     icon: <MdLock className="h-6 w-6" />,
     component: <SignIn />,
   },
-  {
-    name: "RTL Admin",
-    layout: "/rtl",
-    path: "rtl",
-    icon: <MdHome className="h-6 w-6" />,
-    component: <RTLDefault />,
-  },
+  // {
+  //   name: "RTL Admin",
+  //   layout: "/rtl",
+  //   path: "rtl",
+  //   icon: <MdHome className="h-6 w-6" />,
+  //   component: <RTLDefault />,
+  // },
 ];
 export default routes;
