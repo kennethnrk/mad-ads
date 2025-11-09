@@ -85,33 +85,12 @@ class TranscriptionResponse(BaseModel):
 class CompanyCreateRequest(BaseModel):
     """Request for creating a new company"""
     name: str = Field(..., description="Company name")
-    description: Optional[str] = Field(None, description="Company description")
-    industry: Optional[str] = Field(None, description="Industry category")
-    website: Optional[str] = Field(None, description="Company website URL")
-    contact_email: Optional[str] = Field(None, description="Contact email")
-    contact_phone: Optional[str] = Field(None, description="Contact phone")
-    target_audience: Optional[Dict[str, Any]] = Field(None, description="Target audience characteristics")
-    extra_metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class CompanyResponse(BaseModel):
     """Response for company operations"""
     id: str
     name: str
-    description: Optional[str] = None
-    industry: Optional[str] = None
-    website: Optional[str] = None
-    contact_email: Optional[str] = None
-    contact_phone: Optional[str] = None
-    logo_url: Optional[str] = None
-    brand_voice: Optional[str] = None
-    company_summary: Optional[str] = None
-    target_audience: Optional[Dict[str, Any]] = None
-    brand_keywords: Optional[List[str]] = None
-    extra_metadata: Optional[Dict[str, Any]] = None
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
 
 
 class CompanyUpdateRequest(BaseModel):
@@ -129,20 +108,11 @@ class CompanyUpdateRequest(BaseModel):
 
 # Product onboarding models
 class ProductCreateRequest(BaseModel):
-    """Request for creating a new product"""
-    company_id: str = Field(..., description="Company ID that owns this product")
-    name: str = Field(..., description="Product name")
-    description: Optional[str] = Field(None, description="Product description")
-    price: Optional[float] = Field(None, description="Product price")
-    currency: Optional[str] = Field("USD", description="Currency code")
-    category: Optional[str] = Field(None, description="Product category")
-    ad_phrases: Optional[List[str]] = Field(None, description="Ad phrases for matching")
-    use_cases: Optional[List[str]] = Field(None, description="Use cases for this product")
-    features: Optional[List[str]] = Field(None, description="Product features")
-    target_audience: Optional[Dict[str, Any]] = Field(None, description="Target audience")
-    pain_points: Optional[List[str]] = Field(None, description="Pain points addressed")
-    keywords: Optional[List[str]] = Field(None, description="Product keywords")
-    extra_metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    company_id: str
+    name: str
+    description: Optional[str] = None
+    price: Optional[float] = None
+    tags: Optional[str] = None   # we will join into comma string
 
 
 class ProductResponse(BaseModel):
@@ -152,38 +122,14 @@ class ProductResponse(BaseModel):
     name: str
     description: Optional[str] = None
     price: Optional[float] = None
-    currency: str
-    category: Optional[str] = None
-    image_urls: Optional[List[str]] = None
-    embedded_text: Optional[str] = None
-    ad_phrases: Optional[List[str]] = None
-    use_cases: Optional[List[str]] = None
-    product_summary: Optional[str] = None
-    features: Optional[List[str]] = None
-    target_audience: Optional[Dict[str, Any]] = None
-    pain_points: Optional[List[str]] = None
-    keywords: Optional[List[str]] = None
-    extra_metadata: Optional[Dict[str, Any]] = None
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    tags: Optional[str] = None  
 
 
 class ProductUpdateRequest(BaseModel):
-    """Request for updating a product"""
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
-    currency: Optional[str] = None
-    category: Optional[str] = None
-    ad_phrases: Optional[List[str]] = None
-    use_cases: Optional[List[str]] = None
-    features: Optional[List[str]] = None
-    target_audience: Optional[Dict[str, Any]] = None
-    pain_points: Optional[List[str]] = None
-    keywords: Optional[List[str]] = None
-    extra_metadata: Optional[Dict[str, Any]] = None
-    is_active: Optional[bool] = None
+    tags: Optional[str] = None
 
 
 class ImageUploadResponse(BaseModel):

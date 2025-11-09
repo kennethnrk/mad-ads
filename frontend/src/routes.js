@@ -9,6 +9,7 @@ import TestingDashboard from "views/admin/testing";
 import RTLDefault from "views/rtl/default";
 import CompanyProfile from "views/admin-company/profile";
 import Products from "views/admin-company/products";
+import NewProduct from "views/admin-company/newProducts";
 // Auth Imports
 import SignIn from "views/auth/SignIn";
 
@@ -19,6 +20,7 @@ import {
   MdBarChart,
   MdSpaceDashboard,
   MdLock,
+  MdAdd,
 } from "react-icons/md";
 
 const routes = [
@@ -74,12 +76,20 @@ const routes = [
     component: <CompanyProfile />,
   },
   {
+    name: "New Product",
+    layout: "/admin-company",
+    path: "new-product",
+    icon: <MdAdd className="h-6 w-6" />,
+    component: <NewProduct />,
+  },
+  {
     name: "Products",
     layout: "/admin-company",
     path: "products",
     icon: <MdHome className="h-6 w-6" />,
     component: <Products />,
   },
+ 
   // {
   //   name: "RTL Admin",
   //   layout: "/rtl",

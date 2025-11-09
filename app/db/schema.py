@@ -16,11 +16,11 @@ class Ad(Base):
     
     id = Column(String, primary_key=True)
     owner_id = Column(String, nullable=False, index=True)
-    primary_text = Column(Text, nullable=False)
+    product_id = Column(String, ForeignKey("products.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
     tags = Column(JSON, default=list)  # List of tag strings
-    product_facts = Column(JSON, default=dict)  # Dict of product facts
-    target_demo = Column(JSON, default=dict)  # Dict of demographic targeting
-    assets = Column(JSON, default=dict)  # Dict with image?, video? keys
+    url = Column(String, nullable=False)  # URL to ad asset
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -121,20 +121,6 @@ class Company(Base):
     
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False, index=True)
-    description = Column(Text)  # Company description
-    industry = Column(String, index=True)  # Industry category
-    website = Column(String)  # Company website URL
-    contact_email = Column(String)
-    contact_phone = Column(String)
-    logo_url = Column(String)  # URL to company logo image
-    brand_voice = Column(Text)  # LLM-generated brand voice description
-    company_summary = Column(Text)  # LLM-generated company summary for matching
-    target_audience = Column(JSON, default=dict)  # Target audience characteristics
-    brand_keywords = Column(JSON, default=list)  # Brand-relevant keywords
-    extra_metadata = Column(JSON, default=dict)  # Additional company metadata (renamed from metadata to avoid SQLAlchemy conflict)
-    is_active = Column(Boolean, default=True, index=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class Product(Base):
@@ -146,18 +132,8 @@ class Product(Base):
     name = Column(String, nullable=False, index=True)
     description = Column(Text)  # Product description
     price = Column(Float)  # Product price
-    currency = Column(String, default="USD")  # Currency code
-    category = Column(String, index=True)  # Product category (Snacks, Drinks, Meals, Supplements, Gear, Recovery, Bundles, etc.)
-    image_urls = Column(JSON, default=list)  # List of product image URLs
-    embedded_text = Column(Text)  # Single paragraph to embed & search (LLM-generated)
-    ad_phrases = Column(JSON, default=list)  # Array of ad phrases like ["wrist pain on bench", ...]
-    use_cases = Column(JSON, default=list)  # Array of use cases like ["push day", "post-workout", ...]
-    product_summary = Column(Text)  # LLM-generated product summary for matching
-    features = Column(JSON, default=list)  # Product features
-    target_audience = Column(JSON, default=dict)  # Target audience for this product
-    pain_points = Column(JSON, default=list)  # Pain points this product addresses
-    keywords = Column(JSON, default=list)  # Product keywords for matching
-    extra_metadata = Column(JSON, default=dict)  # Additional product metadata (renamed from metadata to avoid SQLAlchemy conflict)
-    is_active = Column(Boolean, default=True, index=True)
+    tags = Column(String)  # List of tag strings
     created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+    

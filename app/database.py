@@ -12,7 +12,7 @@ from app.logging_config import get_logger
 logger = get_logger(__name__)
 
 # SQLite in-memory database with connection pooling
-DATABASE_URL = "sqlite:///:memory:"
+DATABASE_URL = "sqlite:///./test.db"
 
 # Create engine with StaticPool for in-memory SQLite
 engine = create_engine(
