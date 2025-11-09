@@ -7,7 +7,8 @@ import ContentCreator from "views/admin/profile";
 import DataTables from "views/admin/tables";
 import TestingDashboard from "views/admin/testing";
 import RTLDefault from "views/rtl/default";
-
+import CompanyProfile from "views/admin-company/profile";
+import Products from "views/admin-company/products";
 // Auth Imports
 import SignIn from "views/auth/SignIn";
 
@@ -64,6 +65,20 @@ const routes = [
     path: "sign-in",
     icon: <MdLock className="h-6 w-6" />,
     component: <SignIn />,
+  },
+  {
+    name: "Company Profile",
+    layout: "/admin-company",
+    path: "profile",
+    icon: <MdSpaceDashboard className="h-6 w-6" />,
+    component: <CompanyProfile />,
+  },
+  {
+    name: "Products",
+    layout: "/admin-company",
+    path: "products",
+    icon: <MdHome className="h-6 w-6" />,
+    component: <Products />,
   },
   // {
   //   name: "RTL Admin",

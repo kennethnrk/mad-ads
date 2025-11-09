@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr
 from enum import Enum
 from typing import Optional, List
 from datetime import datetime, timedelta
-from jose import JWTError, jwt
+import jwt
 from sqlalchemy import Column, Integer, String, Enum as SAEnum, ForeignKey, create_engine, Text
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
 import os
@@ -164,7 +164,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
-    except JWTError:
+    except jwt.InvalidTokenError:
         raise credentials_exception
     user = get_user_by_email(db, email=email)
     if user is None:

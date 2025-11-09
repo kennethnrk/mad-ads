@@ -15,8 +15,10 @@ export default function Admin(props) {
   const navigate = useNavigate();
   // if user is not authenticated, redirect to login page
   React.useEffect(() => {
+    console.log("User not authenticated, redirecting to login page");
+
     if (isAuthenticated && !user) {
-      navigate("/auth/sign-in");
+      navigate("/admin-company/profile");
     }
   }, [user, isAuthenticated]);
   React.useEffect(() => {
@@ -54,7 +56,7 @@ export default function Admin(props) {
   };
   const getRoutes = (routes) => {
     return routes.map((prop, key) => {
-      if (prop.layout === "/admin") {
+      if (prop.layout === "/admin-company") {
         return (
           <Route path={`/${prop.path}`} element={prop.component} key={key} />
         );
@@ -67,7 +69,7 @@ export default function Admin(props) {
   document.documentElement.dir = "ltr";
   return (
     <div className="flex h-full w-full">
-      <Sidebar open={open} onClose={() => setOpen(false)} />
+      <Sidebar open={open} onClose={() => setOpen(false)} company={true} />
       {/* Navbar & Main Content */}
       <div className="h-full w-full bg-lightPrimary dark:!bg-navy-900">
         {/* Main Content */}
@@ -89,7 +91,7 @@ export default function Admin(props) {
 
                 <Route
                   path="/"
-                  element={<Navigate to="/admin/default" replace />}
+                  element={<Navigate to="/admin-company/profile" replace />}
                 />
               </Routes>
             </div>
