@@ -13,6 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install system dependencies if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file from project root
