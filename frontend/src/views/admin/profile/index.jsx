@@ -2,14 +2,15 @@ import Banner from "./components/Banner";
 import Storage from "./components/Storage";
 import Upload from "./components/Upload";
 import MatchedAds from "./components/MatchedAds";
+import AdInsertion from "./components/ad-insertion/AdInsertion";
 import { useState } from "react";
 
-const ContentCreator = () => {
+const AdStudio = () => {
   const [uploadResults, setUploadResults] = useState(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
-  console.log('[ContentCreator] Component rendered', { 
+  console.log('[AdStudio] Component rendered', { 
     hasResults: !!uploadResults, 
     loading: uploadLoading, 
     error: uploadError 
@@ -18,21 +19,21 @@ const ContentCreator = () => {
   // This will be passed down to Upload component via props in future
   // For now, we'll handle it via state management
   const handleUploadComplete = (results) => {
-    console.log('[ContentCreator] Upload completed', { adsCount: results?.count });
+    console.log('[AdStudio] Upload completed', { adsCount: results?.count });
     setUploadResults(results);
     setUploadLoading(false);
     setUploadError(null);
   };
 
   const handleUploadStart = () => {
-    console.log('[ContentCreator] Upload started');
+    console.log('[AdStudio] Upload started');
     setUploadLoading(true);
     setUploadError(null);
     setUploadResults(null);
   };
 
   const handleUploadError = (error) => {
-    console.error('[ContentCreator] Upload error', error);
+    console.error('[AdStudio] Upload error', error);
     setUploadError(error);
     setUploadLoading(false);
   };
@@ -75,8 +76,16 @@ const ContentCreator = () => {
           />
         </div>
       )}
+
+      {/* Ad Insertion Section - Always visible for testing with hardcoded videos */}
+      <div className="w-full">
+        <AdInsertion 
+          transcription={uploadResults?.transcription}
+          videoFile={uploadResults?.videoFile}
+        />
+      </div>
     </div>
   );
 };
 
-export default ContentCreator;
+export default AdStudio;

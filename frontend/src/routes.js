@@ -3,7 +3,7 @@ import React from "react";
 // Admin Imports
 import MainDashboard from "views/admin/default";
 import NFTMarketplace from "views/admin/marketplace";
-import ContentCreator from "views/admin/profile";
+import AdStudio from "views/admin/profile";
 import DataTables from "views/admin/tables";
 import TestingDashboard from "views/admin/testing";
 import RTLDefault from "views/rtl/default";
@@ -25,11 +25,11 @@ import {
 
 const routes = [
     {
-    name: "Content Creator",
+    name: "Ad Studio",
     layout: "/admin",
     path: "creator",
     icon: <MdSpaceDashboard className="h-6 w-6" />,
-    component: <ContentCreator />,
+    component: <AdStudio />,
   },
   {
     name: "Products",

@@ -199,6 +199,50 @@ export const processVideoAndMatch = async (videoFile, options = {}) => {
 };
 
 /**
+ * Insert ads into video at specified timestamps
+ * @param {Array} placements - Array of {timestamp: number, adId?: string} objects
+ */
+export const insertAdIntoVideo = async (placements) => {
+  console.log('[API] Inserting ads into video', { placements });
+  
+  if (!placements || placements.length === 0) {
+    throw new Error('At least one placement is required');
+  }
+  
+  try {
+    const response = await fetch(API_ENDPOINTS.VIDEO_INSERT_AD, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        placements: placements.map(p => ({
+          timestamp: p.timestamp,
+          ad_id: p.adId || null,
+        })),
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      console.error('[API] Ad insertion failed:', errorData);
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('[API] Ad insertion successful', { 
+      success: result.success,
+      outputPath: result.output_video_path,
+      previewUrl: result.preview_url
+    });
+    return result;
+  } catch (error) {
+    console.error('[API] Ad insertion error:', error);
+    throw error;
+  }
+};
+
+/**
  * Register a new user
  * @param {Object} userData - { email, password, type }
  */

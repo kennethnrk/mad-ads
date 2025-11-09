@@ -1,6 +1,7 @@
 """API route handlers"""
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 import whisper
@@ -17,7 +18,8 @@ from app.api.models import (
     TranscriptionResponse,
     CompanyCreateRequest, CompanyResponse, CompanyUpdateRequest,
     ProductCreateRequest, ProductResponse, ProductUpdateRequest,
-    ImageUploadResponse
+    ImageUploadResponse,
+    AdInsertionRequest, AdInsertionResponse
 )
 from app.database import get_db
 from app.db.schema import Company, Product
@@ -26,6 +28,7 @@ from app.services.ai import summarize_content_for_ads
 from app.snowflake.queries import snowflake_query, snowflake_vector_search
 from app.services.storage import storage_put, storage_url
 from app.services.content_generator import generate_company_content, generate_product_content
+from app.services.video_editor import insert_ads_into_video
 from app.logging_config import get_logger
 import uuid
 from datetime import datetime
@@ -632,3 +635,118 @@ async def list_products(
         img_url=product.img_url,
     )        for product in products
     ]
+
+@router.post("/video/insert-ad", response_model=AdInsertionResponse)
+async def insert_ad_into_video(request: AdInsertionRequest):
+    """
+    Insert multiple ads into video at specified timestamps using FFmpeg.
+    For MVP, uses hardcoded test videos: test_vid/videoplayback.mp4 and test_vid/demo_ad.mp4
+    
+    Args:
+        request: AdInsertionRequest with list of placements (timestamp, ad_id)
+        
+    Returns:
+        AdInsertionResponse with output video path (saved as test_vid/res.mp4)
+    """
+    if not request.placements:
+        raise HTTPException(status_code=400, detail="At least one placement is required")
+    
+    logger.info("insert_ad_into_video_called", placement_count=len(request.placements))
+    
+    # Hardcoded paths for MVP
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    main_video_path = os.path.join(base_dir, "test_vid", "videoplayback.mp4")
+    ad_video_path = os.path.join(base_dir, "test_vid", "demo_ad.mp4")
+    output_video_path = os.path.join(base_dir, "test_vid", "res.mp4")
+    
+    # Check if files exist
+    if not os.path.exists(main_video_path):
+        raise HTTPException(status_code=404, detail=f"Main video not found: {main_video_path}")
+    if not os.path.exists(ad_video_path):
+        raise HTTPException(status_code=404, detail=f"Ad video not found: {ad_video_path}")
+    
+    # Check if ffmpeg is available
+    if not shutil.which('ffmpeg'):
+        raise HTTPException(
+            status_code=500,
+            detail="FFmpeg is not installed. Please install FFmpeg to process video files."
+        )
+    
+    try:
+        # Convert placements to dict format for video_editor service
+        placements_data = [
+            {'timestamp': p.timestamp, 'ad_id': p.ad_id}
+            for p in request.placements
+        ]
+        
+        # Use video_editor service to insert ads
+        insert_ads_into_video(
+            main_video_path=main_video_path,
+            ad_video_path=ad_video_path,
+            placements=placements_data,
+            output_path=output_video_path
+        )
+        
+        logger.info("ad_insertion_completed", output_path=output_video_path, placement_count=len(request.placements))
+        
+        # Return preview URL
+        preview_url = "/api/v1/video/preview/res.mp4"
+        
+        return AdInsertionResponse(
+            success=True,
+            output_video_path=output_video_path,
+            preview_url=preview_url,
+            message=f"Successfully inserted {len(request.placements)} ad(s)"
+        )
+        
+    except ValueError as e:
+        logger.error("validation_error", error=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        logger.error("video_editor_error", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error("insert_ad_error", error=str(e), exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to insert ads: {str(e)}"
+        )
+
+
+@router.get("/video/test-video")
+async def get_test_video():
+    """
+    Serve the test video file for MVP.
+    Returns videoplayback.mp4 from test_vid directory.
+    """
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    video_path = os.path.join(base_dir, "test_vid", "videoplayback.mp4")
+    
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Test video not found")
+    
+    return FileResponse(
+        video_path,
+        media_type="video/mp4",
+        filename="videoplayback.mp4"
+    )
+
+
+@router.get("/video/preview/res.mp4")
+async def get_preview_video():
+    """
+    Serve the preview video with inserted ads.
+    Returns res.mp4 from test_vid directory.
+    """
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    video_path = os.path.join(base_dir, "test_vid", "res.mp4")
+    
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Preview video not found. Please generate a video with ads first.")
+    
+    return FileResponse(
+        video_path,
+        media_type="video/mp4",
+        filename="res.mp4"
+    )
+
