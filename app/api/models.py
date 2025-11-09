@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+from fastapi import UploadFile
 
 
 # Match endpoint models
@@ -61,3 +62,17 @@ class SnowflakeTestResponse(BaseModel):
     success: bool
     results: List[Dict[str, Any]] = Field(default_factory=list)
     error: Optional[str] = None
+# Transcription endpoint models
+class TranscriptionResponse(BaseModel):
+    """Response for transcription endpoint"""
+    text: str
+    language: str
+    duration: float
+    segments: List[Dict[str, Any]] = Field(
+        description="List of transcribed segments with timestamps"
+    )
+    topics: List[str] = Field(
+        default_factory=list,
+        description="Extracted topics from the transcription"
+    )
+
