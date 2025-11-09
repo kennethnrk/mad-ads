@@ -1,14 +1,45 @@
 import Banner from "./components/Banner";
-import General from "./components/General";
-import Notification from "./components/Notification";
-import Project from "./components/Project";
 import Storage from "./components/Storage";
 import Upload from "./components/Upload";
+import MatchedAds from "./components/MatchedAds";
+import { useState } from "react";
 
-const ProfileOverview = () => {
+const ContentCreator = () => {
+  const [uploadResults, setUploadResults] = useState(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+
+  console.log('[ContentCreator] Component rendered', { 
+    hasResults: !!uploadResults, 
+    loading: uploadLoading, 
+    error: uploadError 
+  });
+
+  // This will be passed down to Upload component via props in future
+  // For now, we'll handle it via state management
+  const handleUploadComplete = (results) => {
+    console.log('[ContentCreator] Upload completed', { adsCount: results?.count });
+    setUploadResults(results);
+    setUploadLoading(false);
+    setUploadError(null);
+  };
+
+  const handleUploadStart = () => {
+    console.log('[ContentCreator] Upload started');
+    setUploadLoading(true);
+    setUploadError(null);
+    setUploadResults(null);
+  };
+
+  const handleUploadError = (error) => {
+    console.error('[ContentCreator] Upload error', error);
+    setUploadError(error);
+    setUploadLoading(false);
+  };
+
   return (
     <div className="flex w-full flex-col gap-5">
-      <div className="w-ful mt-3 flex h-fit flex-col gap-5 lg:grid lg:grid-cols-12">
+      <div className="w-full mt-3 flex h-fit flex-col gap-5 lg:grid lg:grid-cols-12">
         <div className="col-span-4 lg:!mb-0">
           <Banner />
         </div>
@@ -17,26 +48,35 @@ const ProfileOverview = () => {
           <Storage />
         </div>
 
-        <div className="z-0 col-span-5 lg:!mb-0">
-          <Upload />
+        <div className="col-span-5 lg:!mb-0">
+          {/* Placeholder for future content */}
         </div>
       </div>
-      {/* all project & ... */}
 
-      <div className="grid h-full grid-cols-1 gap-5 lg:!grid-cols-12">
-        <div className="col-span-5 lg:col-span-6 lg:mb-0 3xl:col-span-4">
-          {/* <Project /> */}
-        </div>
-        <div className="col-span-5 lg:col-span-6 lg:mb-0 3xl:col-span-5">
-          {/* <General /> */}
-        </div>
-
-        <div className="col-span-5 lg:col-span-12 lg:mb-0 3xl:!col-span-3">
-          {/* <Notification /> */}
-        </div>
+      {/* Video Upload Section - New Line */}
+      <div className="w-full">
+        <Upload 
+          onUploadStart={handleUploadStart}
+          onUploadComplete={handleUploadComplete}
+          onUploadError={handleUploadError}
+        />
       </div>
+
+      {/* Matched Ads Section */}
+      {uploadResults && (
+        <div className="w-full">
+          <MatchedAds 
+            ads={uploadResults.ads || []} 
+            loading={uploadLoading}
+            error={uploadError}
+            summary={uploadResults.summary}
+            transcription={uploadResults.transcription}
+            videoFile={uploadResults.videoFile}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
-export default ProfileOverview;
+export default ContentCreator;

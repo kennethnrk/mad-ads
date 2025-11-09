@@ -15,7 +15,8 @@ from app.mcp.tools import (
     metrics_simulate,
     storage_put,
     storage_url,
-    audit_log
+    audit_log,
+    summarize_content_for_ads
 )
 from app.logging_config import get_logger
 
@@ -137,6 +138,20 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["event", "payload"]
             }
+        ),
+        Tool(
+            name="content.summarize_for_ads",
+            description="Summarize content/transcript into signals optimized for Snowflake Cortex ad embedding queries. Preserves semantic meaning, product context, and searchable signals needed for vector search.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "transcript": {
+                        "type": "string",
+                        "description": "Content transcript or text to summarize"
+                    }
+                },
+                "required": ["transcript"]
+            }
         )
     ]
 
@@ -197,6 +212,10 @@ async def call_tool(name: str, arguments: dict[str, Any] | None) -> Sequence[Tex
                 arguments.get("payload", {})
             )
             result = {"status": "logged"}
+        elif name == "content.summarize_for_ads":
+            result = await summarize_content_for_ads(
+                arguments.get("transcript", "")
+            )
         else:
             raise ValueError(f"Unknown tool: {name}")
         

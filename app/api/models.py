@@ -75,4 +75,8 @@ class TranscriptionResponse(BaseModel):
         default_factory=list,
         description="Extracted topics from the transcription"
     )
+    summary: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Summary signals for finding relevant ads (query, topics, signals)"
+    )
 
