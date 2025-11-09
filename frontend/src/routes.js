@@ -29,7 +29,7 @@ const routes = [
     component: <ContentCreator />,
   },
   {
-    name: "Main Dashboard",
+    name: "Products",
     layout: "/admin",
     path: "default",
     icon: <MdHome className="h-6 w-6" />,
