@@ -1,22 +1,24 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Card from 'components/card';
 import { API_ENDPOINTS } from 'config/api';
 import Timeline from './Timeline';
 import MarkerList from './MarkerList';
 import { useMarkers } from './hooks/useMarkers';
 import { useVideoGeneration } from './hooks/useVideoGeneration';
+import { findSemanticPlacements, createEvenPlacements } from './utils/semanticMatching';
 
 /**
  * Main AdInsertion component - simplified, all-in-one
  * Simple video player with marker tracking
  */
-const AdInsertion = ({ transcription, videoFile }) => {
+const AdInsertion = ({ transcription, videoFile, uploadResults }) => {
   const videoRef = useRef(null);
   
   // Video state - simple and direct
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [autoMarkersCreated, setAutoMarkersCreated] = useState(false);
 
   const {
     markers,
@@ -24,6 +26,7 @@ const AdInsertion = ({ transcription, videoFile }) => {
     addMarker,
     removeMarker,
     selectMarker,
+    clearMarkers,
   } = useMarkers();
 
   const {
@@ -53,6 +56,66 @@ const AdInsertion = ({ transcription, videoFile }) => {
     }
     setCurrentTime(0);
   };
+
+  // Auto-create markers from process-and-match results using semantic matching
+  useEffect(() => {
+    if (uploadResults?.ads && uploadResults.ads.length > 0 && duration > 0 && !autoMarkersCreated) {
+      console.log('[AdInsertion] Auto-creating markers from matched ads', {
+        adsCount: uploadResults.ads.length,
+        duration,
+        hasSegments: !!uploadResults.transcription?.segments
+      });
+      
+      // Clear existing markers first
+      clearMarkers();
+      
+      // Try semantic matching first (if segments are available)
+      const segments = uploadResults.transcription?.segments || [];
+      let placements = [];
+      
+      if (segments.length > 0) {
+        console.log('[AdInsertion] Using semantic matching with segments', { 
+          segmentsCount: segments.length,
+          hasSummary: !!uploadResults.summary
+        });
+        placements = findSemanticPlacements(
+          uploadResults.ads, 
+          segments, 
+          5, 
+          uploadResults.summary // Pass summary for enhanced matching
+        );
+      }
+      
+      // Fallback to even distribution if semantic matching didn't find enough placements
+      if (placements.length === 0) {
+        console.log('[AdInsertion] Falling back to even distribution');
+        placements = createEvenPlacements(uploadResults.ads, duration, 5);
+      }
+      
+      // Create markers from placements
+      placements.forEach(placement => {
+        addMarker(placement.timestamp, placement.adId);
+      });
+      
+      setAutoMarkersCreated(true);
+      console.log('[AdInsertion] Auto-created markers', { 
+        count: placements.length,
+        method: segments.length > 0 ? 'semantic' : 'even',
+        placements: placements.map(p => ({ 
+          timestamp: p.timestamp.toFixed(2), 
+          adName: p.ad.product_name,
+          score: p.score?.toFixed(2)
+        }))
+      });
+    }
+  }, [uploadResults, duration, autoMarkersCreated, addMarker, clearMarkers]);
+
+  // Reset auto-markers flag when new video is uploaded
+  useEffect(() => {
+    if (uploadResults) {
+      setAutoMarkersCreated(false);
+    }
+  }, [uploadResults?.videoFile]);
 
   const handlePlay = () => setIsPlaying(true);
   const handlePause = () => setIsPlaying(false);
@@ -113,12 +176,27 @@ const AdInsertion = ({ transcription, videoFile }) => {
               Insert Ads into Video
             </h5>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Scrub to a timestamp, click "+ Add Marker" to place ads, then generate the final video
+              {uploadResults?.ads?.length > 0 && autoMarkersCreated
+                ? uploadResults.transcription?.segments?.length > 0
+                  ? `Semantically placed ${markers.length} markers at relevant discussion points. Adjust as needed.`
+                  : `Auto-placed ${markers.length} markers from matched ads. Adjust as needed.`
+                : 'Scrub to a timestamp, click "+ Add Marker" to place ads, then generate the final video'}
             </p>
           </div>
-          <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
-            TESTING MODE
-          </span>
+          {uploadResults?.ads?.length > 0 && autoMarkersCreated && (
+            <span className={`px-3 py-1 rounded text-xs font-semibold ${
+              uploadResults.transcription?.segments?.length > 0
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-green-100 text-green-800'
+            }`}>
+              {uploadResults.transcription?.segments?.length > 0 ? 'SEMANTIC MATCHING' : 'AUTO-MARKERS'}
+            </span>
+          )}
+          {!uploadResults?.ads && (
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
+              TESTING MODE
+            </span>
+          )}
         </div>
       </div>
 
@@ -199,6 +277,11 @@ const AdInsertion = ({ transcription, videoFile }) => {
             onSelectMarker={selectMarker}
             onRemoveMarker={removeMarker}
             onSeekToMarker={handleSeekToMarker}
+            adsMap={uploadResults?.ads?.reduce((acc, ad) => {
+              const key = ad.id || ad.product_name;
+              if (key) acc[key] = ad;
+              return acc;
+            }, {}) || {}}
           />
 
           {/* Generate Button */}

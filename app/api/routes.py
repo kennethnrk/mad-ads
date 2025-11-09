@@ -356,7 +356,8 @@ async def process_video_and_find_ads(
                 "text": transcript,
                 "language": transcription_response.language,
                 "duration": transcription_response.duration,
-                "topics": transcription_response.topics
+                "topics": transcription_response.topics,
+                "segments": transcription_response.segments  # Include segments with timestamps for semantic matching
             },
             "summary": summary,
             "query_used": search_text,
@@ -406,19 +407,7 @@ async def find_ads_from_transcript(
         
         # Default columns if not specified - include all metadata fields
         if not columns:
-            columns = [
-                "id", 
-                "name", 
-                "category", 
-                "price", 
-                "image_url", 
-                "company",
-                "brand",
-                "product",
-                "product_name",
-                "product_description",
-                "manufacturer"
-            ]
+            columns = ["id","product_name", "company_name", "category", "price", "image_url"]
         
         # Search for relevant ads using Cortex
         ads = await snowflake_vector_search(
@@ -431,14 +420,21 @@ async def find_ads_from_transcript(
         # Rank ads by relevance score
         ranked_ads = []
         for idx, ad in enumerate(ads):
+            logger.info("ad", ad=ad)
+            cosine_sim = ad.get("@scores").get("cosine_similarity", 0.0)
+
             ranked_ad = {
                 **ad,
                 "rank": idx + 1,
-                "relevance_score": ad.get("@score", ad.get("score", 1.0 - (idx * 0.1)))
+                "cosine_similarity": cosine_sim,
+                "relevance_score": cosine_sim
             }
             ranked_ads.append(ranked_ad)
-        
-        ranked_ads.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+
+        # Sort by cosine similarity (highest first)
+        ranked_ads.sort(key=lambda x: x.get("cosine_similarity", 0), reverse=True)
+
+        # Re-assign ranks after sorting
         for idx, ad in enumerate(ranked_ads):
             ad["rank"] = idx + 1
         

@@ -82,6 +82,7 @@ const AdStudio = () => {
         <AdInsertion 
           transcription={uploadResults?.transcription}
           videoFile={uploadResults?.videoFile}
+          uploadResults={uploadResults}
         />
       </div>
     </div>
