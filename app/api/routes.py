@@ -572,7 +572,7 @@ async def create_product(req: ProductCreateRequest, db: Session = Depends(get_db
             try:
                 async with httpx.AsyncClient() as client:
                     await client.post(
-                        "http://localhost:8001/enrich",
+                        f"{settings.embedding_service_url}/enrich",
                         json={
                             "id": product.id,
                             "product_name": product.name,

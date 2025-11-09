@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     cloudinary_api_key: Optional[str] = None
     cloudinary_api_secret: Optional[str] = None
     
+    # Embedding Service Configuration
+    embedding_service_url: str = "http://localhost:8001"
+    
     def validate_required(self) -> None:
         """Validate that required environment variables are set"""
         required_for_demo = [

@@ -1,0 +1,71 @@
+services:
+  # Main FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: mad-ads-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Embedding Service URL (use service name for internal networking)
+      - EMBEDDING_SERVICE_URL=http://embedding-service:8000
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app/app
+      - ./test.db:/app/test.db
+    networks:
+      - mad-ads-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Embedding Text Generation Service
+  embedding-service:
+    build:
+      context: .
+      dockerfile: embedding_text_gen_service/Dockerfile
+    container_name: mad-ads-embedding
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    networks:
+      - mad-ads-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+    container_name: mad-ads-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+    env_file:
+      - .env
+    networks:
+      - mad-ads-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  mad-ads-network:
+    driver: bridge
+
