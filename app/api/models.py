@@ -40,3 +40,24 @@ class HealthResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
     version: str = "0.1.0"
 
+
+# Snowflake test endpoint models
+class SnowflakeQueryRequest(BaseModel):
+    """Request for Snowflake query test"""
+    query: str = Field(..., description="SQL query to execute")
+    params: Optional[Dict[str, Any]] = Field(None, description="Query parameters")
+
+
+class SnowflakeVectorSearchRequest(BaseModel):
+    """Request for Snowflake vector search test"""
+    text: str = Field(..., description="Search query text")
+    k: int = Field(5, ge=1, le=50, description="Number of results")
+    columns: Optional[List[str]] = Field(None, description="Columns to return")
+    filter_obj: Optional[Dict[str, Any]] = Field(None, description="Filter object")
+
+
+class SnowflakeTestResponse(BaseModel):
+    """Response for Snowflake test endpoints"""
+    success: bool
+    results: List[Dict[str, Any]] = Field(default_factory=list)
+    error: Optional[str] = None

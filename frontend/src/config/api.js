@@ -27,6 +27,10 @@ export const API_ENDPOINTS = {
   // Metrics endpoints (to be implemented)
   METRICS_SIMULATE: `${API_BASE_URL}/api/v1/metrics/simulate`,
   METRICS_STREAM: `${API_BASE_URL}/api/v1/metrics/stream`,
+  
+  // Snowflake test endpoints
+  SNOWFLAKE_QUERY: `${API_BASE_URL}/api/v1/snowflake/query`,
+  SNOWFLAKE_VECTOR_SEARCH: `${API_BASE_URL}/api/v1/snowflake/vector-search`,
 };
 
 export default API_BASE_URL;

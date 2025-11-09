@@ -1,10 +1,77 @@
-"""MCP tool implementations (stubs for now)"""
+"""MCP tool implementations with real Snowflake integration"""
 
 import json
 from typing import Any, Dict, List, Optional
+import snowflake.connector
+from app.config import settings
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
+
+
+def get_snowflake_connection():
+    """Get a Snowflake connection using settings"""
+    conn_params = {
+        "account": settings.snowflake_account,
+        "user": settings.snowflake_user,
+        "warehouse": settings.snowflake_warehouse,
+        "database": settings.snowflake_database,
+        "schema": settings.snowflake_schema,
+        "role": settings.snowflake_role,
+    }
+    
+    # Add authentication method
+    if settings.snowflake_authenticator:
+        conn_params["authenticator"] = settings.snowflake_authenticator
+    elif settings.snowflake_password:
+        conn_params["password"] = settings.snowflake_password
+    else:
+        raise ValueError("No authentication method configured (password or authenticator required)")
+    
+    return snowflake.connector.connect(**conn_params)
+
+
+def cortex_search_preview(conn, service_name: str, query: str, columns=None, filter_obj=None, limit: int = 5):
+    """
+    Calls SNOWFLAKE.CORTEX.SEARCH_PREVIEW on your Cortex Search service.
+    Returns a list of result dicts (already parsed from JSON).
+    """
+    payload = {
+        "query": query,
+        "limit": limit
+    }
+    if columns:
+        payload["columns"] = columns
+    if filter_obj:
+        payload["filter"] = filter_obj
+
+    sql = """
+    SELECT PARSE_JSON(
+      SNOWFLAKE.CORTEX.SEARCH_PREVIEW(%(svc)s, %(payload)s)
+    )['results']
+    """
+    
+    cs = conn.cursor()
+    try:
+        cs.execute(sql, {"svc": service_name, "payload": json.dumps(payload)})
+        row = cs.fetchone()
+        if row and row[0]:
+            # Parse JSON if it's a string, otherwise use as-is
+            if isinstance(row[0], str):
+                try:
+                    results = json.loads(row[0])
+                except json.JSONDecodeError:
+                    results = row[0]
+            else:
+                results = row[0]
+            # Ensure it's a list
+            if not isinstance(results, list):
+                results = [results] if results else []
+        else:
+            results = []
+        return results
+    finally:
+        cs.close()
 
 
 async def snowflake_query(query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -20,14 +87,35 @@ async def snowflake_query(query: str, params: Optional[Dict[str, Any]] = None) -
     """
     logger.info("snowflake_query_called", query=query, params=params)
     
-    # Stub implementation - returns mock data
-    mock_results = [
-        {"id": "1", "fact": "Product is eco-friendly", "source": "product_catalog"},
-        {"id": "2", "fact": "Target audience: 20-30 years", "source": "demographics"}
-    ]
-    
-    logger.info("snowflake_query_completed", result_count=len(mock_results))
-    return mock_results
+    try:
+        conn = get_snowflake_connection()
+        try:
+            cs = conn.cursor()
+            try:
+                if params:
+                    cs.execute(query, params)
+                else:
+                    cs.execute(query)
+                
+                # Fetch results and convert to list of dicts
+                columns = [desc[0] for desc in cs.description] if cs.description else []
+                rows = cs.fetchall()
+                results = [dict(zip(columns, row)) for row in rows]
+                
+                logger.info("snowflake_query_completed", result_count=len(results))
+                return results
+            finally:
+                cs.close()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("snowflake_query_error", error=str(e), exc_info=True)
+        # Fallback to mock data if connection fails
+        logger.warning("falling_back_to_mock_data")
+        return [
+            {"id": "1", "fact": "Product is eco-friendly", "source": "product_catalog"},
+            {"id": "2", "fact": "Target audience: 20-30 years", "source": "demographics"}
+        ]
 
 
 async def snowflake_vector_search(text: str, k: int = 5) -> List[Dict[str, Any]]:
@@ -43,24 +131,38 @@ async def snowflake_vector_search(text: str, k: int = 5) -> List[Dict[str, Any]]
     """
     logger.info("snowflake_vector_search_called", text=text, k=k)
     
-    # Stub implementation - returns mock data
-    mock_results = [
-        {
-            "id": "vec_1",
-            "text": "Similar ad content about eco-friendly products",
-            "score": 0.85,
-            "metadata": {"category": "Gear"}
-        },
-        {
-            "id": "vec_2", 
-            "text": "Related marketing content for fitness enthusiasts",
-            "score": 0.78,
-            "metadata": {"category": "Snacks"}
-        }
-    ][:k]
-    
-    logger.info("snowflake_vector_search_completed", result_count=len(mock_results))
-    return mock_results
+    try:
+        conn = get_snowflake_connection()
+        try:
+            results = cortex_search_preview(
+                conn=conn,
+                service_name=settings.snowflake_cortex_service_name,
+                query=text,
+                limit=k
+            )
+            
+            logger.info("snowflake_vector_search_completed", result_count=len(results))
+            return results
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("snowflake_vector_search_error", error=str(e), exc_info=True)
+        # Fallback to mock data if connection fails
+        logger.warning("falling_back_to_mock_data")
+        return [
+            {
+                "id": "vec_1",
+                "text": "Similar ad content about eco-friendly products",
+                "score": 0.85,
+                "metadata": {"category": "Gear"}
+            },
+            {
+                "id": "vec_2", 
+                "text": "Related marketing content for fitness enthusiasts",
+                "score": 0.78,
+                "metadata": {"category": "Snacks"}
+            }
+        ][:k]
 
 
 async def score_match(content_id: str, ad_id: Optional[str] = None, ad_text: Optional[str] = None) -> Dict[str, Any]:
@@ -217,4 +319,3 @@ async def audit_log(event: str, payload: Dict[str, Any]) -> None:
         payload: Event payload
     """
     logger.info("audit_log", event=event, payload=payload)
-

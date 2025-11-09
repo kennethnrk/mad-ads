@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     snowflake_account: Optional[str] = None
     snowflake_user: Optional[str] = None
     snowflake_password: Optional[str] = None
+    snowflake_authenticator: Optional[str] = None  # e.g., "externalbrowser" or None for password
     snowflake_warehouse: Optional[str] = None
     snowflake_database: Optional[str] = None
     snowflake_schema: Optional[str] = None

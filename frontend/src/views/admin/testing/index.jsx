@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import Card from "components/card";
-import { matchContent, checkHealth, generateVariants, textToSpeech, optimizeCampaign } from "services/api";
+import { matchContent, checkHealth, generateVariants, textToSpeech, optimizeCampaign, testSnowflakeQuery, testSnowflakeVectorSearch } from "services/api";
 
 const TestingDashboard = () => {
   const [healthStatus, setHealthStatus] = useState(null);
   const [matchResult, setMatchResult] = useState(null);
   const [loading, setLoading] = useState({});
   const [errors, setErrors] = useState({});
+  const [snowflakeQueryResult, setSnowflakeQueryResult] = useState(null);
+  const [snowflakeVectorResult, setSnowflakeVectorResult] = useState(null);
 
   // Health Check
   const handleHealthCheck = async () => {
@@ -102,6 +104,57 @@ const TestingDashboard = () => {
       setErrors({ ...errors, optimize: error.message });
     } finally {
       setLoading({ ...loading, optimize: false });
+    }
+  };
+
+  // Snowflake Query Test
+  const [snowflakeQueryData, setSnowflakeQueryData] = useState({
+    query: "SELECT * FROM MVP_PRODUCTS LIMIT 5",
+    params: null,
+  });
+
+  const handleSnowflakeQuery = async () => {
+    setLoading({ ...loading, snowflakeQuery: true });
+    setErrors({ ...errors, snowflakeQuery: null });
+    setSnowflakeQueryResult(null);
+    try {
+      const result = await testSnowflakeQuery({
+        query: snowflakeQueryData.query,
+        params: snowflakeQueryData.params ? JSON.parse(snowflakeQueryData.params) : null,
+      });
+      setSnowflakeQueryResult(result);
+    } catch (error) {
+      setErrors({ ...errors, snowflakeQuery: error.message });
+    } finally {
+      setLoading({ ...loading, snowflakeQuery: false });
+    }
+  };
+
+  // Snowflake Vector Search Test
+  const [snowflakeVectorData, setSnowflakeVectorData] = useState({
+    text: "wrist hurts on bench press, need support",
+    k: 5,
+    columns: ["id", "name", "category", "price", "image_url"],
+    filter_obj: '{"@eq": {"category": "Gear"}}',
+  });
+
+  const handleSnowflakeVectorSearch = async () => {
+    setLoading({ ...loading, snowflakeVector: true });
+    setErrors({ ...errors, snowflakeVector: null });
+    setSnowflakeVectorResult(null);
+    try {
+      const filterObj = snowflakeVectorData.filter_obj ? JSON.parse(snowflakeVectorData.filter_obj) : null;
+      const result = await testSnowflakeVectorSearch({
+        text: snowflakeVectorData.text,
+        k: snowflakeVectorData.k,
+        columns: snowflakeVectorData.columns,
+        filter_obj: filterObj,
+      });
+      setSnowflakeVectorResult(result);
+    } catch (error) {
+      setErrors({ ...errors, snowflakeVector: error.message });
+    } finally {
+      setLoading({ ...loading, snowflakeVector: false });
     }
   };
 
@@ -415,6 +468,166 @@ const TestingDashboard = () => {
             {errors.optimize && (
               <div className="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
                 <strong>Error:</strong> {errors.optimize}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Snowflake Query Test */}
+        <Card extra="!p-[20px]">
+          <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
+            Snowflake Query Test
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                SQL Query:
+              </label>
+              <textarea
+                value={snowflakeQueryData.query}
+                onChange={(e) => setSnowflakeQueryData({ ...snowflakeQueryData, query: e.target.value })}
+                rows={4}
+                className="flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white/0 p-3 text-sm outline-none dark:!border-navy-800 dark:bg-navy-800 dark:text-white font-mono"
+                placeholder="SELECT * FROM MVP_PRODUCTS LIMIT 5"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                Parameters (JSON, optional):
+              </label>
+              <textarea
+                value={snowflakeQueryData.params || ""}
+                onChange={(e) => setSnowflakeQueryData({ ...snowflakeQueryData, params: e.target.value || null })}
+                rows={2}
+                className="flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white/0 p-3 text-sm outline-none dark:!border-navy-800 dark:bg-navy-800 dark:text-white font-mono"
+                placeholder='{"param1": "value1"}'
+              />
+            </div>
+            <button
+              onClick={handleSnowflakeQuery}
+              disabled={loading.snowflakeQuery}
+              className="linear flex items-center justify-center rounded-xl bg-blue-500 px-4 py-2 text-base font-medium text-white transition duration-200 hover:bg-blue-600 active:bg-blue-700 dark:bg-blue-400 dark:text-white dark:hover:bg-blue-300 dark:active:bg-blue-200 disabled:opacity-50"
+            >
+              {loading.snowflakeQuery ? "Executing Query..." : "Execute Query"}
+            </button>
+            {errors.snowflakeQuery && (
+              <div className="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
+                <strong>Error:</strong> {errors.snowflakeQuery}
+              </div>
+            )}
+            {snowflakeQueryResult && (
+              <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-bold text-blue-800 dark:text-blue-200">
+                    Query Results:
+                  </p>
+                  <span className={`px-2 py-1 rounded text-sm font-semibold ${
+                    snowflakeQueryResult.success 
+                      ? "bg-green-500 text-white" 
+                      : "bg-red-500 text-white"
+                  }`}>
+                    {snowflakeQueryResult.success ? "Success" : "Failed"}
+                  </span>
+                </div>
+                {snowflakeQueryResult.error && (
+                  <p className="text-red-600 dark:text-red-300 mb-2">{snowflakeQueryResult.error}</p>
+                )}
+                {snowflakeQueryResult.results && snowflakeQueryResult.results.length > 0 && (
+                  <div className="mt-2 max-h-96 overflow-y-auto">
+                    <pre className="text-xs bg-white dark:bg-navy-700 p-3 rounded border border-gray-200 dark:border-navy-600 overflow-x-auto">
+                      {JSON.stringify(snowflakeQueryResult.results, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Snowflake Vector Search Test */}
+        <Card extra="!p-[20px]">
+          <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
+            Snowflake Cortex Vector Search
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                Search Text:
+              </label>
+              <textarea
+                value={snowflakeVectorData.text}
+                onChange={(e) => setSnowflakeVectorData({ ...snowflakeVectorData, text: e.target.value })}
+                rows={3}
+                className="flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white/0 p-3 text-sm outline-none dark:!border-navy-800 dark:bg-navy-800 dark:text-white"
+                placeholder="wrist hurts on bench press, need support"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                Number of Results (k):
+              </label>
+              <input
+                type="number"
+                value={snowflakeVectorData.k}
+                onChange={(e) => setSnowflakeVectorData({ ...snowflakeVectorData, k: parseInt(e.target.value) || 5 })}
+                className="flex h-12 w-full items-center justify-center rounded-xl border border-gray-200 bg-white/0 p-3 text-sm outline-none dark:!border-navy-800 dark:bg-navy-800 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                Filter Object (JSON, optional):
+              </label>
+              <textarea
+                value={snowflakeVectorData.filter_obj}
+                onChange={(e) => setSnowflakeVectorData({ ...snowflakeVectorData, filter_obj: e.target.value })}
+                rows={2}
+                className="flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white/0 p-3 text-sm outline-none dark:!border-navy-800 dark:bg-navy-800 dark:text-white font-mono"
+                placeholder='{"@eq": {"category": "Gear"}}'
+              />
+            </div>
+            <button
+              onClick={handleSnowflakeVectorSearch}
+              disabled={loading.snowflakeVector}
+              className="linear flex items-center justify-center rounded-xl bg-indigo-500 px-4 py-2 text-base font-medium text-white transition duration-200 hover:bg-indigo-600 active:bg-indigo-700 dark:bg-indigo-400 dark:text-white dark:hover:bg-indigo-300 dark:active:bg-indigo-200 disabled:opacity-50"
+            >
+              {loading.snowflakeVector ? "Searching..." : "Vector Search"}
+            </button>
+            {errors.snowflakeVector && (
+              <div className="rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
+                <strong>Error:</strong> {errors.snowflakeVector}
+              </div>
+            )}
+            {snowflakeVectorResult && (
+              <div className="rounded-lg bg-indigo-50 p-4 dark:bg-indigo-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-bold text-indigo-800 dark:text-indigo-200">
+                    Search Results:
+                  </p>
+                  <span className={`px-2 py-1 rounded text-sm font-semibold ${
+                    snowflakeVectorResult.success 
+                      ? "bg-green-500 text-white" 
+                      : "bg-red-500 text-white"
+                  }`}>
+                    {snowflakeVectorResult.success ? "Success" : "Failed"}
+                  </span>
+                </div>
+                {snowflakeVectorResult.error && (
+                  <p className="text-red-600 dark:text-red-300 mb-2">{snowflakeVectorResult.error}</p>
+                )}
+                {snowflakeVectorResult.results && snowflakeVectorResult.results.length > 0 && (
+                  <div className="mt-2 space-y-2 max-h-96 overflow-y-auto">
+                    {snowflakeVectorResult.results.map((result, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg bg-white p-3 border border-gray-200 dark:bg-navy-700 dark:border-navy-600"
+                      >
+                        <pre className="text-xs overflow-x-auto">
+                          {JSON.stringify(result, null, 2)}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

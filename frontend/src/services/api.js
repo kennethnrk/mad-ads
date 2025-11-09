@@ -121,3 +121,25 @@ export const streamMetrics = (token) => {
   return eventSource;
 };
 
+/**
+ * Test Snowflake query
+ * @param {Object} queryData - { query, params? }
+ */
+export const testSnowflakeQuery = async (queryData) => {
+  return apiRequest(API_ENDPOINTS.SNOWFLAKE_QUERY, {
+    method: 'POST',
+    body: JSON.stringify(queryData),
+  });
+};
+
+/**
+ * Test Snowflake vector search
+ * @param {Object} searchData - { text, k?, columns?, filter_obj? }
+ */
+export const testSnowflakeVectorSearch = async (searchData) => {
+  return apiRequest(API_ENDPOINTS.SNOWFLAKE_VECTOR_SEARCH, {
+    method: 'POST',
+    body: JSON.stringify(searchData),
+  });
+};
+
