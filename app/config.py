@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     # API Authentication
     api_key_secret: Optional[str] = None
     
+    # Cloudinary Configuration
+    cloudinary_cloud_name: Optional[str] = None
+    cloudinary_api_key: Optional[str] = None
+    cloudinary_api_secret: Optional[str] = None
+    
     def validate_required(self) -> None:
         """Validate that required environment variables are set"""
         required_for_demo = [

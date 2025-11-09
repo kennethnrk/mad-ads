@@ -140,3 +140,26 @@ class ImageUploadResponse(BaseModel):
     image_url: str
     storage_id: Optional[str] = None
     message: str = "Image uploaded successfully"
+
+
+# Ad upload models
+class AdUploadRequest(BaseModel):
+    """Request for uploading an ad (multipart form data)"""
+    owner_id: str = Field(..., description="ID of the ad owner/company")
+    product_id: str = Field(..., description="ID of the product this ad is for")
+    title: str = Field(..., description="Ad title")
+    description: str = Field(..., description="Ad description")
+    tags: Optional[List[str]] = Field(default_factory=list, description="List of tags for the ad")
+
+
+class AdUploadResponse(BaseModel):
+    """Response for ad upload"""
+    id: str
+    owner_id: str
+    product_id: str
+    title: str
+    description: str
+    tags: List[str]
+    url: str
+    cloudinary_public_id: Optional[str] = None
+    message: str = "Ad uploaded successfully"

@@ -42,6 +42,9 @@ export const API_ENDPOINTS = {
   TRANSCRIBE: `${API_BASE_URL}/api/v1/transcribe`,
 
   PRODUCTS: `${API_BASE_URL}/api/v1/products`,
+  
+  // Ad upload endpoint
+  AD_UPLOAD: `${API_BASE_URL}/api/v1/ads/upload`,
 };
 
 export default API_BASE_URL;
