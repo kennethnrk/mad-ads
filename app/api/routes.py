@@ -23,7 +23,8 @@ from app.database import get_db
 from app.db.schema import Company, Product
 from app.services.matching import score_match
 from app.services.ai import summarize_content_for_ads
-from app.snowflake.queries import snowflake_query, snowflake_vector_search, storage_put, storage_url
+from app.snowflake.queries import snowflake_query, snowflake_vector_search
+from app.services.storage import storage_put, storage_url
 from app.services.content_generator import generate_company_content, generate_product_content
 from app.logging_config import get_logger
 import uuid
