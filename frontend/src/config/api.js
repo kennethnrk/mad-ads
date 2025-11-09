@@ -9,6 +9,11 @@ export const API_ENDPOINTS = {
   // Health check
   HEALTH: `${API_BASE_URL}/api/v1/health`,
   
+  // Authentication endpoints
+  REGISTER: `${API_BASE_URL}/register`,
+  LOGIN: `${API_BASE_URL}/token`,
+  ME: `${API_BASE_URL}/me`,
+  
   // Match endpoint
   MATCH: `${API_BASE_URL}/api/v1/match`,
   
