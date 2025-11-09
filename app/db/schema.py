@@ -131,7 +131,7 @@ class Company(Base):
     company_summary = Column(Text)  # LLM-generated company summary for matching
     target_audience = Column(JSON, default=dict)  # Target audience characteristics
     brand_keywords = Column(JSON, default=list)  # Brand-relevant keywords
-    metadata = Column(JSON, default=dict)  # Additional company metadata
+    extra_metadata = Column(JSON, default=dict)  # Additional company metadata (renamed from metadata to avoid SQLAlchemy conflict)
     is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -157,7 +157,7 @@ class Product(Base):
     target_audience = Column(JSON, default=dict)  # Target audience for this product
     pain_points = Column(JSON, default=list)  # Pain points this product addresses
     keywords = Column(JSON, default=list)  # Product keywords for matching
-    metadata = Column(JSON, default=dict)  # Additional product metadata
+    extra_metadata = Column(JSON, default=dict)  # Additional product metadata (renamed from metadata to avoid SQLAlchemy conflict)
     is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

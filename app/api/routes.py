@@ -483,7 +483,7 @@ async def create_company(
             company_summary=llm_content.get("company_summary"),
             target_audience=request.target_audience or llm_content.get("target_audience", {}),
             brand_keywords=llm_content.get("brand_keywords", []),
-            metadata=request.metadata or {}
+            extra_metadata=request.extra_metadata or {}
         )
         
         db.add(company)
@@ -505,7 +505,7 @@ async def create_company(
             company_summary=company.company_summary,
             target_audience=company.target_audience,
             brand_keywords=company.brand_keywords,
-            metadata=company.metadata,
+            extra_metadata=company.extra_metadata,
             is_active=company.is_active,
             created_at=company.created_at,
             updated_at=company.updated_at
@@ -541,7 +541,7 @@ async def get_company(
         company_summary=company.company_summary,
         target_audience=company.target_audience,
         brand_keywords=company.brand_keywords,
-        metadata=company.metadata,
+        extra_metadata=company.extra_metadata,
         is_active=company.is_active,
         created_at=company.created_at,
         updated_at=company.updated_at
@@ -578,7 +578,7 @@ async def list_companies(
             company_summary=company.company_summary,
             target_audience=company.target_audience,
             brand_keywords=company.brand_keywords,
-            metadata=company.metadata,
+            extra_metadata=company.extra_metadata,
             is_active=company.is_active,
             created_at=company.created_at,
             updated_at=company.updated_at
@@ -615,8 +615,8 @@ async def update_company(
         company.contact_phone = request.contact_phone
     if request.target_audience is not None:
         company.target_audience = request.target_audience
-    if request.metadata is not None:
-        company.metadata = request.metadata
+    if request.extra_metadata is not None:
+        company.extra_metadata = request.extra_metadata
     if request.is_active is not None:
         company.is_active = request.is_active
     
@@ -652,7 +652,7 @@ async def update_company(
         company_summary=company.company_summary,
         target_audience=company.target_audience,
         brand_keywords=company.brand_keywords,
-        metadata=company.metadata,
+        extra_metadata=company.extra_metadata,
         is_active=company.is_active,
         created_at=company.created_at,
         updated_at=company.updated_at
@@ -708,7 +708,7 @@ async def create_product(
             target_audience=request.target_audience or llm_content.get("target_audience", {}),
             pain_points=request.pain_points or llm_content.get("pain_points", []),
             keywords=request.keywords or llm_content.get("keywords", []),
-            metadata=request.metadata or {}
+            extra_metadata=request.extra_metadata or {}
         )
         
         db.add(product)
@@ -734,7 +734,7 @@ async def create_product(
             target_audience=product.target_audience,
             pain_points=product.pain_points,
             keywords=product.keywords,
-            metadata=product.metadata,
+            extra_metadata=product.extra_metadata,
             is_active=product.is_active,
             created_at=product.created_at,
             updated_at=product.updated_at
@@ -776,7 +776,7 @@ async def get_product(
         target_audience=product.target_audience,
         pain_points=product.pain_points,
         keywords=product.keywords,
-        metadata=product.metadata,
+        extra_metadata=product.extra_metadata,
         is_active=product.is_active,
         created_at=product.created_at,
         updated_at=product.updated_at
@@ -824,7 +824,7 @@ async def list_products(
             target_audience=product.target_audience,
             pain_points=product.pain_points,
             keywords=product.keywords,
-            metadata=product.metadata,
+            extra_metadata=product.extra_metadata,
             is_active=product.is_active,
             created_at=product.created_at,
             updated_at=product.updated_at
@@ -869,8 +869,8 @@ async def update_product(
         product.pain_points = request.pain_points
     if request.keywords is not None:
         product.keywords = request.keywords
-    if request.metadata is not None:
-        product.metadata = request.metadata
+    if request.extra_metadata is not None:
+        product.extra_metadata = request.extra_metadata
     if request.is_active is not None:
         product.is_active = request.is_active
     
@@ -919,7 +919,7 @@ async def update_product(
         target_audience=product.target_audience,
         pain_points=product.pain_points,
         keywords=product.keywords,
-        metadata=product.metadata,
+        extra_metadata=product.extra_metadata,
         is_active=product.is_active,
         created_at=product.created_at,
         updated_at=product.updated_at

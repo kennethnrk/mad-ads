@@ -91,7 +91,7 @@ class CompanyCreateRequest(BaseModel):
     contact_email: Optional[str] = Field(None, description="Contact email")
     contact_phone: Optional[str] = Field(None, description="Contact phone")
     target_audience: Optional[Dict[str, Any]] = Field(None, description="Target audience characteristics")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    extra_metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class CompanyResponse(BaseModel):
@@ -108,7 +108,7 @@ class CompanyResponse(BaseModel):
     company_summary: Optional[str] = None
     target_audience: Optional[Dict[str, Any]] = None
     brand_keywords: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    extra_metadata: Optional[Dict[str, Any]] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -123,7 +123,7 @@ class CompanyUpdateRequest(BaseModel):
     contact_email: Optional[str] = None
     contact_phone: Optional[str] = None
     target_audience: Optional[Dict[str, Any]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    extra_metadata: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
 
 
@@ -142,7 +142,7 @@ class ProductCreateRequest(BaseModel):
     target_audience: Optional[Dict[str, Any]] = Field(None, description="Target audience")
     pain_points: Optional[List[str]] = Field(None, description="Pain points addressed")
     keywords: Optional[List[str]] = Field(None, description="Product keywords")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    extra_metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class ProductResponse(BaseModel):
@@ -163,7 +163,7 @@ class ProductResponse(BaseModel):
     target_audience: Optional[Dict[str, Any]] = None
     pain_points: Optional[List[str]] = None
     keywords: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    extra_metadata: Optional[Dict[str, Any]] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -182,7 +182,7 @@ class ProductUpdateRequest(BaseModel):
     target_audience: Optional[Dict[str, Any]] = None
     pain_points: Optional[List[str]] = None
     keywords: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    extra_metadata: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
 
 
