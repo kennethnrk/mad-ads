@@ -25,6 +25,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code (app directory)
 COPY app/ ./app/
 
+# Copy test_vid folder for video processing
+COPY test_vid/ ./test_vid/
+
 # Expose port 8000
 EXPOSE 8000
 
