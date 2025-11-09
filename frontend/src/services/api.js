@@ -6,14 +6,27 @@
 import { API_ENDPOINTS } from '../config/api';
 
 /**
+ * Get stored auth token from localStorage
+ */
+const getAuthToken = () => {
+  return localStorage.getItem('authToken');
+};
+
+/**
  * Generic API request handler
  */
 async function apiRequest(endpoint, options = {}) {
+  const token = getAuthToken();
   const defaultOptions = {
     headers: {
       'Content-Type': 'application/json',
     },
   };
+
+  // Add Authorization header if token exists
+  if (token) {
+    defaultOptions.headers['Authorization'] = `Bearer ${token}`;
+  }
 
   const config = {
     ...defaultOptions,
@@ -183,5 +196,60 @@ export const processVideoAndMatch = async (videoFile, options = {}) => {
     console.error('[API] Video processing error:', error);
     throw error;
   }
+};
+
+/**
+ * Register a new user
+ * @param {Object} userData - { email, password, type }
+ */
+export const registerUser = async (userData) => {
+  return apiRequest(API_ENDPOINTS.REGISTER, {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
+};
+
+/**
+ * Login user
+ * @param {Object} credentials - { username (email), password }
+ */
+export const loginUser = async (credentials) => {
+  const formData = new URLSearchParams();
+  formData.append('username', credentials.email || credentials.username);
+  formData.append('password', credentials.password);
+
+  const response = await fetch(API_ENDPOINTS.LOGIN, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  // Store token in localStorage
+  if (data.access_token) {
+    localStorage.setItem('authToken', data.access_token);
+  }
+  return data;
+};
+
+/**
+ * Get current user info
+ */
+export const getCurrentUser = async () => {
+  return apiRequest(API_ENDPOINTS.ME);
+};
+
+/**
+ * Logout user (clear token)
+ */
+export const logoutUser = () => {
+  localStorage.removeItem('authToken');
 };
 

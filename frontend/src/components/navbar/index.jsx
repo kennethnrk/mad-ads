@@ -1,4 +1,7 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "store/hooks";
+import { logout } from "store/userSlice";
 import Dropdown from "components/dropdown";
 import { FiAlignJustify } from "react-icons/fi";
 import { Link } from "react-router-dom";
@@ -15,6 +18,14 @@ import avatar from "assets/img/avatars/avatar4.png";
 const Navbar = (props) => {
   const { onOpenSidenav, brandText } = props;
   const [darkmode, setDarkmode] = React.useState(false);
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.user);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/auth/sign-in");
+  };
 
   return (
     <nav className="sticky top-4 z-40 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/10 p-2 backdrop-blur-xl dark:bg-[#0b14374d]">
@@ -55,7 +66,7 @@ const Navbar = (props) => {
           <input
             type="text"
             placeholder="Search..."
-            class="block h-full w-full rounded-full bg-lightPrimary text-sm font-medium text-navy-700 outline-none placeholder:!text-gray-400 dark:bg-navy-900 dark:text-white dark:placeholder:!text-white sm:w-fit"
+            className="block h-full w-full rounded-full bg-lightPrimary text-sm font-medium text-navy-700 outline-none placeholder:!text-gray-400 dark:bg-navy-900 dark:text-white dark:placeholder:!text-white sm:w-fit"
           />
         </div>
         <span
@@ -181,7 +192,7 @@ const Navbar = (props) => {
             <img
               className="h-10 w-10 rounded-full"
               src={avatar}
-              alt="Elon Musk"
+              alt={user?.email || "User"}
             />
           }
           children={
@@ -189,9 +200,19 @@ const Navbar = (props) => {
               <div className="p-4">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-bold text-navy-700 dark:text-white">
-                    👋 Hey, Adela
+                    👋 Hey, {user?.email?.split("@")[0] || "User"}
                   </p>{" "}
                 </div>
+                {user && (
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    {user.email}
+                  </p>
+                )}
+                {user?.type && (
+                  <p className="mt-1 text-xs font-medium text-navy-700 dark:text-white">
+                    Type: {user.type}
+                  </p>
+                )}
               </div>
               <div className="h-px w-full bg-gray-200 dark:bg-white/20 " />
 
@@ -208,12 +229,12 @@ const Navbar = (props) => {
                 >
                   Newsletter Settings
                 </a>
-                <a
-                  href=" "
-                  className="mt-3 text-sm font-medium text-red-500 hover:text-red-500 transition duration-150 ease-out hover:ease-in"
+                <button
+                  onClick={handleLogout}
+                  className="mt-3 text-left text-sm font-medium text-red-500 hover:text-red-500 transition duration-150 ease-out hover:ease-in"
                 >
                   Log Out
-                </a>
+                </button>
               </div>
             </div>
           }

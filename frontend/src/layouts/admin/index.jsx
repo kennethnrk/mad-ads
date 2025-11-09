@@ -4,13 +4,21 @@ import Navbar from "components/navbar";
 import Sidebar from "components/sidebar";
 import Footer from "components/footer/Footer";
 import routes from "routes.js";
-
+import { useAppSelector } from "store/hooks";
+import { useNavigate } from "react-router-dom";
 export default function Admin(props) {
   const { ...rest } = props;
   const location = useLocation();
   const [open, setOpen] = React.useState(true);
   const [currentRoute, setCurrentRoute] = React.useState("Main Dashboard");
-
+  const { user } = useAppSelector((state) => state.user);
+  const navigate = useNavigate();
+  // if user is not authenticated, redirect to login page
+  React.useEffect(() => {
+    if (!user) {
+      navigate("/auth/sign-in");
+    }
+  }, [user]);
   React.useEffect(() => {
     window.addEventListener("resize", () =>
       window.innerWidth < 1200 ? setOpen(false) : setOpen(true)
